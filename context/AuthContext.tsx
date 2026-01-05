@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { api } from '../services/api';
 
 export type Role = 'admin' | 'customer' | 'guest';
 
@@ -24,25 +25,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string) => {
-    // Simulated API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Hardcoded Admin Credentials
-    if (email === 'admin@saudipart.com' && password === 'admin') {
-      setUser({ id: '1', name: 'System Admin', email, role: 'admin' });
-      return true;
+    try {
+      const loggedUser = await api.login(email, password);
+      if (loggedUser) {
+        setUser(loggedUser);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
     }
-    
-    // Regular User Login (Simulated)
-    if (email && password) {
-      setUser({ id: '2', name: email.split('@')[0], email, role: 'customer' });
-      return true;
-    }
-    
-    return false;
   };
 
   const signup = async (name: string, email: string, password: string) => {
+    // For prototype, signup immediately logs you in as a customer
     await new Promise(resolve => setTimeout(resolve, 500));
     setUser({ id: Math.random().toString(), name, email, role: 'customer' });
     return true;

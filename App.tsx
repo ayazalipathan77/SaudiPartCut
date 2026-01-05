@@ -10,7 +10,7 @@ import AuthModal from './components/AuthModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
 import { calculateQuote } from './utils/pricing';
-import { MATERIALS as INIT_MATERIALS, SERVICES as INIT_SERVICES, FINISHES as INIT_FINISHES, VAT_RATE } from './constants';
+import { api } from './services/api';
 
 type AppMode = 'landing' | 'wizard' | 'admin';
 
@@ -18,6 +18,7 @@ const AppContent: React.FC = () => {
   const { user, logout } = useAuth();
   const [mode, setMode] = useState<AppMode>('landing');
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Auth Modal State
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
@@ -28,16 +29,38 @@ const AppContent: React.FC = () => {
     if (user?.role === 'admin') {
       setMode('admin');
     } else if (user && mode === 'admin') {
-      // If user logs out or switches from admin to customer while in admin mode
       setMode('landing');
     }
   }, [user, mode]);
 
-  // Data State (Simulating Database)
-  const [materials, setMaterials] = useState<MaterialDef[]>(INIT_MATERIALS);
-  const [services, setServices] = useState<ServiceDef[]>(INIT_SERVICES);
-  const [finishes, setFinishes] = useState<FinishingDef[]>(INIT_FINISHES);
-  const [vatRate, setVatRate] = useState<number>(VAT_RATE);
+  // Data State (Fetched from API)
+  const [materials, setMaterials] = useState<MaterialDef[]>([]);
+  const [services, setServices] = useState<ServiceDef[]>([]);
+  const [finishes, setFinishes] = useState<FinishingDef[]>([]);
+  const [vatRate, setVatRate] = useState<number>(0.15);
+
+  // Fetch Initial Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [mats, servs, fins, vat] = await Promise.all([
+          api.getMaterials(),
+          api.getServices(),
+          api.getFinishes(),
+          api.getVatRate()
+        ]);
+        setMaterials(mats);
+        setServices(servs);
+        setFinishes(fins);
+        setVatRate(vat);
+      } catch (error) {
+        console.error("Failed to load application data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // State for Part Configuration
   const [dimensions, setDimensions] = useState<PartDimensions>({
@@ -60,6 +83,7 @@ const AppContent: React.FC = () => {
 
   // Real-time pricing calculation
   const quote = useMemo(() => {
+    if (materials.length === 0) return null;
     return calculateQuote(dimensions, materialId, serviceId, finishingId, materials, services, finishes, vatRate);
   }, [dimensions, materialId, serviceId, finishingId, materials, services, finishes, vatRate]);
 
@@ -85,7 +109,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleOrder = () => {
-    alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote.total.toFixed(2)}`);
+    alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote?.total.toFixed(2)}`);
   };
 
   const handleStartQuote = () => {
@@ -107,12 +131,20 @@ const AppContent: React.FC = () => {
     setAuthModalOpen(true);
   };
 
-  // --- Render Logic ---
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium">Loading Manufacturing Data...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Admin View - Strictly protected
   if (mode === 'admin') {
      if (user?.role !== 'admin') {
-         // Should not happen due to Effect, but safe fallback
          return <div className="p-10 text-center">Unauthorized Access</div>;
      }
      return (
@@ -121,7 +153,7 @@ const AppContent: React.FC = () => {
             services={services} setServices={setServices}
             finishes={finishes} setFinishes={setFinishes}
             vatRate={vatRate} setVatRate={setVatRate}
-            onExit={() => logout()} // Admin exit logs them out or just switches view? Prompt implies managing configs, so exit -> landing/logout
+            onExit={() => logout()}
           />
       );
   }
@@ -214,7 +246,7 @@ const AppContent: React.FC = () => {
                             onSelectMaterial={setMaterialId} 
                             thickness={dimensions.thickness}
                             onSelectThickness={(t) => setDimensions(prev => ({...prev, thickness: t}))}
-                            basePrice={quote.total}
+                            basePrice={quote ? quote.total : 0}
                         />
                      )}
 
@@ -232,7 +264,7 @@ const AppContent: React.FC = () => {
               </div>
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 5 && quote && (
                 <OrderSummary 
                     quote={quote} 
                     onOrder={handleOrder} 
@@ -244,7 +276,7 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* Footer Controls (Steps 1-4) */}
-      {currentStep < 5 && (
+      {currentStep < 5 && quote && (
           <MiniQuoteTicker 
             total={quote.total} 
             onNext={nextStep} 

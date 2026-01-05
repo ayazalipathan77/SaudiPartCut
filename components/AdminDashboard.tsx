@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MaterialDef, ServiceDef, FinishingDef } from '../types';
+import { api } from '../services/api';
 
 interface AdminDashboardProps {
   materials: MaterialDef[];
@@ -21,23 +22,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onExit
 }) => {
   const [activeTab, setActiveTab] = useState<'materials' | 'services' | 'finishes' | 'settings'>('materials');
+  const [saving, setSaving] = useState(false);
 
-  const updateMaterial = (id: string, field: keyof MaterialDef, value: any) => {
-    setMaterials(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  // Wrappers to handle API saving
+  const handleMaterialUpdate = async (id: string, field: keyof MaterialDef, value: any) => {
+    const updatedList = materials.map(m => m.id === id ? { ...m, [field]: value } : m);
+    setMaterials(updatedList); // Optimistic update
+    
+    setSaving(true);
+    const item = updatedList.find(m => m.id === id);
+    if (item) await api.updateMaterial(item);
+    setSaving(false);
   };
 
-  const updateService = (id: string, field: keyof ServiceDef, value: any) => {
-    setServices(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+  const handleServiceUpdate = async (id: string, field: keyof ServiceDef, value: any) => {
+    const updatedList = services.map(s => s.id === id ? { ...s, [field]: value } : s);
+    setServices(updatedList);
+    
+    setSaving(true);
+    const item = updatedList.find(s => s.id === id);
+    if (item) await api.updateService(item);
+    setSaving(false);
+  };
+
+  const handleVatUpdate = async (rate: number) => {
+    setVatRate(rate);
+    setSaving(true);
+    await api.updateVatRate(rate);
+    setSaving(false);
   };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Admin Header */}
       <div className="bg-slate-900 text-white px-6 h-16 flex items-center justify-between shadow-md">
-        <h1 className="font-bold text-xl flex items-center gap-2">
-            <span className="bg-red-600 text-xs px-2 py-1 rounded">ADMIN</span>
-            Configuration Dashboard
-        </h1>
+        <div className="flex items-center gap-4">
+            <h1 className="font-bold text-xl flex items-center gap-2">
+                <span className="bg-red-600 text-xs px-2 py-1 rounded">ADMIN</span>
+                Configuration Dashboard
+            </h1>
+            {saving && <span className="text-xs text-yellow-400 animate-pulse">Saving changes...</span>}
+        </div>
         <button 
           onClick={onExit} 
           className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium transition-colors"
@@ -90,7 +115,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         <input 
                                             type="number" 
                                             value={m.basePricePerKg}
-                                            onChange={(e) => updateMaterial(m.id, 'basePricePerKg', parseFloat(e.target.value))}
+                                            onChange={(e) => handleMaterialUpdate(m.id, 'basePricePerKg', parseFloat(e.target.value))}
                                             className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         />
                                     </td>
@@ -123,7 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         <input 
                                             type="number" 
                                             value={s.basePricePerPart || 0}
-                                            onChange={(e) => updateService(s.id, 'basePricePerPart', parseFloat(e.target.value))}
+                                            onChange={(e) => handleServiceUpdate(s.id, 'basePricePerPart', parseFloat(e.target.value))}
                                             className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         />
                                     </td>
@@ -132,7 +157,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                             <input 
                                                 type="number" 
                                                 value={s.pricePerMeterPath}
-                                                onChange={(e) => updateService(s.id, 'pricePerMeterPath', parseFloat(e.target.value))}
+                                                onChange={(e) => handleServiceUpdate(s.id, 'pricePerMeterPath', parseFloat(e.target.value))}
                                                 className="w-24 px-2 py-1 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                             />
                                         ) : (
@@ -168,7 +193,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         min="0"
                                         max="1"
                                         value={vatRate}
-                                        onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                                        onChange={(e) => handleVatUpdate(parseFloat(e.target.value))}
                                         className="w-32 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     />
                                     <div className="text-slate-600 font-medium bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
