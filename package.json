@@ -6,14 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
+    "@react-three/drei": "9.99.0",
+    "@react-three/fiber": "8.15.16",
+    "express": "^4.22.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "three": "0.160.0",
-    "@react-three/fiber": "8.15.16",
-    "@react-three/drei": "9.99.0"
+    "three": "0.160.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
