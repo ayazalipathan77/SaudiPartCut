@@ -1,0 +1,197 @@
+import React, { useState, useMemo } from 'react';
+import WizardNav from './components/WizardNav';
+import { StepTemplate, StepMaterial, StepService } from './components/WizardSteps';
+import DesignConfigurator from './components/DesignConfigurator';
+import PersistentPreview from './components/PersistentPreview';
+import OrderSummary, { MiniQuoteTicker } from './components/OrderSummary';
+import LandingPage from './components/LandingPage';
+import AdminDashboard from './components/AdminDashboard';
+import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
+import { calculateQuote } from './utils/pricing';
+import { MATERIALS as INIT_MATERIALS, SERVICES as INIT_SERVICES, FINISHES as INIT_FINISHES } from './constants';
+
+type AppMode = 'landing' | 'wizard' | 'admin';
+
+const App: React.FC = () => {
+  const [mode, setMode] = useState<AppMode>('landing');
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Data State (Simulating Database)
+  const [materials, setMaterials] = useState<MaterialDef[]>(INIT_MATERIALS);
+  const [services, setServices] = useState<ServiceDef[]>(INIT_SERVICES);
+  const [finishes, setFinishes] = useState<FinishingDef[]>(INIT_FINISHES);
+
+  // State for Part Configuration
+  const [dimensions, setDimensions] = useState<PartDimensions>({
+    width: 200,
+    height: 150,
+    thickness: 4,
+    cornerRadius: 15,
+    holeDiameter: 10,
+  });
+
+  const [materialId, setMaterialId] = useState<MaterialType>('mild_steel');
+  const [serviceId, setServiceId] = useState<ServiceType>('laser_cut');
+  const [finishingId, setFinishingId] = useState<FinishingType>('none');
+
+  const steps = ['Template', 'Design', 'Material', 'Service', 'Review'];
+  const totalSteps = steps.length;
+
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+  // Real-time pricing calculation
+  const quote = useMemo(() => {
+    return calculateQuote(dimensions, materialId, serviceId, finishingId, materials, services, finishes);
+  }, [dimensions, materialId, serviceId, finishingId, materials, services, finishes]);
+
+  // Helper to get names for summary
+  const getSummaryNames = () => {
+      return {
+          materialName: materials.find(m => m.id === materialId)?.name || '',
+          serviceName: services.find(s => s.id === serviceId)?.name || '',
+          finishName: finishes.find(f => f.id === finishingId)?.name || '',
+          thickness: dimensions.thickness
+      }
+  }
+  
+  const getMaterialColor = (id: MaterialType) => {
+    switch (id) {
+      case 'mild_steel': return '#94a3b8'; 
+      case 'stainless_304': return '#e2e8f0'; 
+      case 'stainless_316': return '#f1f5f9'; 
+      case 'aluminum': return '#cbd5e1'; 
+      case 'brass': return '#fcd34d'; 
+      default: return '#cbd5e1';
+    }
+  };
+
+  const handleOrder = () => {
+    alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote.total.toFixed(2)}`);
+  };
+
+  // --- Render Logic ---
+
+  if (mode === 'landing') {
+      return <LandingPage onStart={() => setMode('wizard')} onAdmin={() => setMode('admin')} />;
+  }
+
+  if (mode === 'admin') {
+      return (
+          <AdminDashboard 
+            materials={materials} setMaterials={setMaterials}
+            services={services} setServices={setServices}
+            finishes={finishes} setFinishes={setFinishes}
+            onExit={() => setMode('landing')}
+          />
+      );
+  }
+
+  // --- Wizard Mode ---
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      
+      {/* App Header */}
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setMode('landing')}>
+                <div className="bg-blue-600 text-white p-1 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                </div>
+                <span className="text-xl font-bold text-slate-900 tracking-tight">SaudiPart<span className="text-blue-600">Config</span></span>
+           </div>
+           
+           <div className="flex gap-4">
+               {currentStep > 1 && currentStep < 5 && (
+                   <button onClick={prevStep} className="text-sm font-medium text-slate-500 hover:text-slate-800">
+                       &larr; Back
+                   </button>
+               )}
+               <button onClick={() => setMode('landing')} className="text-sm font-medium text-slate-400 hover:text-red-500">
+                   Exit
+               </button>
+           </div>
+        </div>
+      </header>
+
+      {/* Progress Bar */}
+      <WizardNav currentStep={currentStep} totalSteps={totalSteps} steps={steps} />
+
+      {/* Main Content Area */}
+      <main className="flex-grow max-w-7xl mx-auto px-4 w-full pb-32">
+        <div className="w-full">
+            {currentStep === 1 && (
+                <StepTemplate onSelect={nextStep} />
+            )}
+            
+            {/* Split Grid for Steps 2, 3, 4 */}
+            {(currentStep >= 2 && currentStep <= 4) && (
+              <div className="flex flex-col lg:flex-row gap-8">
+                  {/* Left Column: Persistent Preview */}
+                  <div className="lg:w-1/3 order-1 lg:order-1">
+                      <PersistentPreview 
+                        dimensions={dimensions} 
+                        materialId={materialId} 
+                        previewColor={getMaterialColor(materialId)} 
+                      />
+                  </div>
+
+                  {/* Right Column: Dynamic Content */}
+                  <div className="lg:w-2/3 order-2 lg:order-2">
+                     {currentStep === 2 && (
+                        <DesignConfigurator 
+                            dimensions={dimensions} 
+                            setDimensions={setDimensions} 
+                        />
+                     )}
+
+                     {currentStep === 3 && (
+                        <StepMaterial 
+                            materials={materials}
+                            selectedMaterial={materialId} 
+                            onSelectMaterial={setMaterialId} 
+                            thickness={dimensions.thickness}
+                            onSelectThickness={(t) => setDimensions(prev => ({...prev, thickness: t}))}
+                            basePrice={quote.total}
+                        />
+                     )}
+
+                     {currentStep === 4 && (
+                        <StepService 
+                            services={services}
+                            finishes={finishes}
+                            selectedService={serviceId}
+                            onSelectService={setServiceId}
+                            selectedFinish={finishingId}
+                            onSelectFinish={setFinishingId}
+                        />
+                     )}
+                  </div>
+              </div>
+            )}
+
+            {currentStep === 5 && (
+                <OrderSummary 
+                    quote={quote} 
+                    onOrder={handleOrder} 
+                    onBack={prevStep}
+                    specSummary={getSummaryNames()}
+                />
+            )}
+        </div>
+      </main>
+
+      {/* Footer Controls (Steps 1-4) */}
+      {currentStep < 5 && (
+          <MiniQuoteTicker 
+            total={quote.total} 
+            onNext={nextStep} 
+            nextLabel={currentStep === 1 ? "Start Configuration" : "Next Step"} 
+          />
+      )}
+
+    </div>
+  );
+};
+
+export default App;

@@ -1,0 +1,5 @@
+{
+  "name": "SaudiPartConfig - Manufacturing Platform",
+  "description": "A SendCutSend-style custom manufacturing platform for the Saudi Arabia market featuring real-time SVG previews, instant quoting, and VAT-compliant billing.",
+  "requestFramePermissions": []
+}
