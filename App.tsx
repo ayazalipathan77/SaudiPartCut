@@ -10,7 +10,7 @@ import AuthModal from './components/AuthModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
 import { calculateQuote } from './utils/pricing';
-import { MATERIALS as INIT_MATERIALS, SERVICES as INIT_SERVICES, FINISHES as INIT_FINISHES } from './constants';
+import { MATERIALS as INIT_MATERIALS, SERVICES as INIT_SERVICES, FINISHES as INIT_FINISHES, VAT_RATE } from './constants';
 
 type AppMode = 'landing' | 'wizard' | 'admin';
 
@@ -37,6 +37,7 @@ const AppContent: React.FC = () => {
   const [materials, setMaterials] = useState<MaterialDef[]>(INIT_MATERIALS);
   const [services, setServices] = useState<ServiceDef[]>(INIT_SERVICES);
   const [finishes, setFinishes] = useState<FinishingDef[]>(INIT_FINISHES);
+  const [vatRate, setVatRate] = useState<number>(VAT_RATE);
 
   // State for Part Configuration
   const [dimensions, setDimensions] = useState<PartDimensions>({
@@ -59,8 +60,8 @@ const AppContent: React.FC = () => {
 
   // Real-time pricing calculation
   const quote = useMemo(() => {
-    return calculateQuote(dimensions, materialId, serviceId, finishingId, materials, services, finishes);
-  }, [dimensions, materialId, serviceId, finishingId, materials, services, finishes]);
+    return calculateQuote(dimensions, materialId, serviceId, finishingId, materials, services, finishes, vatRate);
+  }, [dimensions, materialId, serviceId, finishingId, materials, services, finishes, vatRate]);
 
   // Helper to get names for summary
   const getSummaryNames = () => {
@@ -119,6 +120,7 @@ const AppContent: React.FC = () => {
             materials={materials} setMaterials={setMaterials}
             services={services} setServices={setServices}
             finishes={finishes} setFinishes={setFinishes}
+            vatRate={vatRate} setVatRate={setVatRate}
             onExit={() => logout()} // Admin exit logs them out or just switches view? Prompt implies managing configs, so exit -> landing/logout
           />
       );

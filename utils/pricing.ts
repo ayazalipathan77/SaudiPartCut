@@ -1,5 +1,4 @@
 import { PartDimensions, MaterialType, ServiceType, FinishingType, QuoteBreakdown, MaterialDef, ServiceDef, FinishingDef } from '../types';
-import { VAT_RATE } from '../constants';
 
 export const calculateQuote = (
   dimensions: PartDimensions,
@@ -9,7 +8,8 @@ export const calculateQuote = (
   // Inject definitions to support Admin updates
   materials: MaterialDef[],
   services: ServiceDef[],
-  finishes: FinishingDef[]
+  finishes: FinishingDef[],
+  vatRate: number
 ): QuoteBreakdown => {
   const material = materials.find(m => m.id === materialId) || materials[0];
   const service = services.find(s => s.id === serviceId) || services[0];
@@ -55,7 +55,7 @@ export const calculateQuote = (
   const finishingCost = (finishing.pricePerSqMeter || 0) * totalSurfaceAreaM2;
 
   const subtotal = materialCost + serviceCost + finishingCost;
-  const vat = subtotal * VAT_RATE;
+  const vat = subtotal * vatRate;
   const total = subtotal + vat;
 
   return {
