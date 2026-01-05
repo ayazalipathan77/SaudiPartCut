@@ -35,7 +35,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="bg-red-600 text-xs px-2 py-1 rounded">ADMIN</span>
             Configuration Dashboard
         </h1>
-        <button onClick={onExit} className="text-slate-300 hover:text-white text-sm font-medium">Exit Dashboard</button>
+        <button 
+          onClick={onExit} 
+          className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          Log Out
+        </button>
       </div>
 
       <div className="flex-1 max-w-7xl mx-auto w-full p-6">

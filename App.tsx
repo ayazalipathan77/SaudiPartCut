@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import WizardNav from './components/WizardNav';
 import { StepTemplate, StepMaterial, StepService } from './components/WizardSteps';
 import DesignConfigurator from './components/DesignConfigurator';
@@ -6,16 +6,33 @@ import PersistentPreview from './components/PersistentPreview';
 import OrderSummary, { MiniQuoteTicker } from './components/OrderSummary';
 import LandingPage from './components/LandingPage';
 import AdminDashboard from './components/AdminDashboard';
+import AuthModal from './components/AuthModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
 import { calculateQuote } from './utils/pricing';
 import { MATERIALS as INIT_MATERIALS, SERVICES as INIT_SERVICES, FINISHES as INIT_FINISHES } from './constants';
 
 type AppMode = 'landing' | 'wizard' | 'admin';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user, logout } = useAuth();
   const [mode, setMode] = useState<AppMode>('landing');
   const [currentStep, setCurrentStep] = useState(1);
   
+  // Auth Modal State
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+
+  // Effect to handle role-based redirection
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      setMode('admin');
+    } else if (user && mode === 'admin') {
+      // If user logs out or switches from admin to customer while in admin mode
+      setMode('landing');
+    }
+  }, [user, mode]);
+
   // Data State (Simulating Database)
   const [materials, setMaterials] = useState<MaterialDef[]>(INIT_MATERIALS);
   const [services, setServices] = useState<ServiceDef[]>(INIT_SERVICES);
@@ -70,24 +87,62 @@ const App: React.FC = () => {
     alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote.total.toFixed(2)}`);
   };
 
+  const handleStartQuote = () => {
+    if (user) {
+      setMode('wizard');
+    } else {
+      setAuthView('signup');
+      setAuthModalOpen(true);
+    }
+  };
+
+  const openLogin = () => {
+    setAuthView('login');
+    setAuthModalOpen(true);
+  };
+  
+  const openSignup = () => {
+    setAuthView('signup');
+    setAuthModalOpen(true);
+  };
+
   // --- Render Logic ---
 
-  if (mode === 'landing') {
-      return <LandingPage onStart={() => setMode('wizard')} onAdmin={() => setMode('admin')} />;
-  }
-
+  // Admin View - Strictly protected
   if (mode === 'admin') {
-      return (
+     if (user?.role !== 'admin') {
+         // Should not happen due to Effect, but safe fallback
+         return <div className="p-10 text-center">Unauthorized Access</div>;
+     }
+     return (
           <AdminDashboard 
             materials={materials} setMaterials={setMaterials}
             services={services} setServices={setServices}
             finishes={finishes} setFinishes={setFinishes}
-            onExit={() => setMode('landing')}
+            onExit={() => logout()} // Admin exit logs them out or just switches view? Prompt implies managing configs, so exit -> landing/logout
           />
       );
   }
 
-  // --- Wizard Mode ---
+  // Landing View
+  if (mode === 'landing') {
+      return (
+        <>
+          <LandingPage 
+            onStart={handleStartQuote} 
+            onLoginClick={openLogin}
+            onSignupClick={openSignup}
+          />
+          <AuthModal 
+            isOpen={isAuthModalOpen} 
+            onClose={() => setAuthModalOpen(false)} 
+            initialView={authView} 
+          />
+        </>
+      );
+  }
+
+  // Wizard Mode
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       
@@ -101,7 +156,12 @@ const App: React.FC = () => {
                 <span className="text-xl font-bold text-slate-900 tracking-tight">SaudiPart<span className="text-blue-600">Config</span></span>
            </div>
            
-           <div className="flex gap-4">
+           <div className="flex items-center gap-4">
+               {user && (
+                 <span className="text-sm font-medium text-slate-600 hidden md:block">
+                   Draft by {user.name}
+                 </span>
+               )}
                {currentStep > 1 && currentStep < 5 && (
                    <button onClick={prevStep} className="text-sm font-medium text-slate-500 hover:text-slate-800">
                        &larr; Back
@@ -189,8 +249,23 @@ const App: React.FC = () => {
             nextLabel={currentStep === 1 ? "Start Configuration" : "Next Step"} 
           />
       )}
+      
+      {/* Auth Modal (if triggered during flow) */}
+       <AuthModal 
+            isOpen={isAuthModalOpen} 
+            onClose={() => setAuthModalOpen(false)} 
+            initialView={authView} 
+       />
 
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

@@ -1,11 +1,15 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface LandingPageProps {
   onStart: () => void;
-  onAdmin: () => void;
+  onLoginClick: () => void;
+  onSignupClick: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdmin }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSignupClick }) => {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Navigation */}
@@ -17,17 +21,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdmin }) => {
             </div>
             <span className="text-2xl font-bold text-slate-900 tracking-tight">SaudiPart<span className="text-blue-600">Config</span></span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+          
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <a href="#features" className="hover:text-blue-600 transition-colors">Capabilities</a>
             <a href="#materials" className="hover:text-blue-600 transition-colors">Materials</a>
-            <a href="#how-it-works" className="hover:text-blue-600 transition-colors">How it works</a>
+            
+            {user ? (
+              <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                 <div className="flex flex-col text-right">
+                    <span className="text-xs text-slate-400 font-normal">Welcome,</span>
+                    <span className="text-slate-900 font-bold">{user.name}</span>
+                 </div>
+                 {user.role === 'admin' ? (
+                   <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">ADMIN</span>
+                 ) : (
+                   <button onClick={logout} className="text-slate-400 hover:text-red-500">Sign Out</button>
+                 )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                 <button onClick={onLoginClick} className="hover:text-blue-600">Log In</button>
+                 <button 
+                   onClick={onSignupClick}
+                   className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors"
+                 >
+                   Sign Up
+                 </button>
+              </div>
+            )}
           </div>
-          <button 
-            onClick={onStart}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-lg shadow-blue-600/20"
-          >
-            Get Instant Quote
-          </button>
         </div>
       </nav>
 
@@ -58,7 +80,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdmin }) => {
                         onClick={onStart}
                         className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all transform hover:-translate-y-1 shadow-xl shadow-blue-900/50 flex items-center justify-center gap-2"
                     >
-                        Start Your Quote
+                        {user ? 'Resume Configuration' : 'Start Your Quote'}
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                     </button>
                     <button className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-all border border-slate-700">
@@ -120,7 +142,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdmin }) => {
             <div className="flex gap-6 text-sm">
                 <a href="#" className="hover:text-white">Privacy Policy</a>
                 <a href="#" className="hover:text-white">Terms of Service</a>
-                <button onClick={onAdmin} className="hover:text-white text-slate-600">Admin Access</button>
+                <button onClick={onLoginClick} className="hover:text-white text-slate-600 flex items-center gap-1">
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                   Admin Access
+                </button>
             </div>
         </div>
       </footer>
