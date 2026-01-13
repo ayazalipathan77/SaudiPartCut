@@ -1,5 +1,5 @@
-import React, { useMemo, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stage, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { PartDimensions, MaterialType } from '../types';
@@ -76,17 +76,67 @@ const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType 
   );
 };
 
-const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId }) => {
+// Camera Tracker - Updates parent component with camera rotation
+const CameraTracker: React.FC<{ onRotationChange: (rotation: { x: number; y: number; z: number }) => void }> = ({ onRotationChange }) => {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    // Convert camera position to rotation angles
+    const euler = new THREE.Euler().setFromQuaternion(camera.quaternion);
+    onRotationChange({
+      x: euler.x * (180 / Math.PI),
+      y: euler.y * (180 / Math.PI),
+      z: euler.z * (180 / Math.PI)
+    });
+  });
+
+  return null;
+};
+
+// View Cube Component
+const ViewCube: React.FC<{ rotation: { x: number; y: number; z: number } }> = ({ rotation }) => {
   return (
-    <div className="w-full h-full bg-slate-900 rounded-lg overflow-hidden relative">
+    <div className="absolute top-4 right-4 w-20 h-20 pointer-events-none">
+      <div
+        className="relative w-full h-full transform-gpu preserve-3d transition-transform duration-100"
+        style={{
+          transform: `rotateX(${-rotation.x}deg) rotateY(${-rotation.y}deg) rotateZ(${rotation.z}deg)`
+        }}
+      >
+        {/* Cube faces */}
+        <div className="absolute inset-0 bg-white/90 border border-slate-300 rounded-lg shadow-lg flex items-center justify-center text-xs font-bold text-slate-600">
+          F
+        </div>
+        <div className="absolute top-0 right-0 w-8 h-8 bg-white/70 border-l border-t border-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500 transform origin-left -skew-y-12">
+          T
+        </div>
+        <div className="absolute bottom-0 right-0 w-8 h-20 bg-white/60 border-l border-b border-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500 transform origin-left skew-y-12">
+          R
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId }) => {
+  const [cameraRotation, setCameraRotation] = useState({ x: 20, y: -30, z: 0 });
+
+  return (
+    <div className="w-full h-full bg-slate-50 rounded-lg overflow-hidden relative">
       <Canvas shadows dpr={[1, 2]}>
         <PerspectiveCamera makeDefault position={[0, 0, 300]} fov={50} />
         <Stage environment="city" intensity={0.6} adjustCamera={1.2}>
           <PartMesh dimensions={dimensions} materialId={materialId} />
         </Stage>
         <OrbitControls autoRotate autoRotateSpeed={2} makeDefault />
+        <CameraTracker onRotationChange={setCameraRotation} />
       </Canvas>
-      <div className="absolute bottom-4 left-4 text-white/50 text-xs font-mono pointer-events-none">
+
+      {/* View Cube */}
+      <ViewCube rotation={cameraRotation} />
+
+      {/* Controls hint */}
+      <div className="absolute bottom-4 left-4 text-slate-400 text-xs font-medium pointer-events-none">
           Left Click: Rotate • Scroll: Zoom
       </div>
     </div>

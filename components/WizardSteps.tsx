@@ -61,125 +61,149 @@ interface StepMaterialProps {
   thickness: number;
   onSelectThickness: (t: number) => void;
   basePrice: number; // calculated base price of single unit
+  quantity: number;
+  onQuantityChange: (quantity: number) => void;
 }
 
-export const StepMaterial: React.FC<StepMaterialProps> = ({ 
-  materials, selectedMaterial, onSelectMaterial, thickness, onSelectThickness, basePrice
+export const StepMaterial: React.FC<StepMaterialProps> = ({
+  materials, selectedMaterial, onSelectMaterial, thickness, onSelectThickness, basePrice, quantity, onQuantityChange
 }) => {
-  
   // Helper to calculate bulk discount for display
   const getBulkPrice = (qty: number) => {
-    // Simple mock discount logic: 10% for 10+, 20% for 50+, 30% for 100+
     let multiplier = 1;
     if (qty >= 100) multiplier = 0.7;
     else if (qty >= 50) multiplier = 0.8;
     else if (qty >= 10) multiplier = 0.9;
-    
     return (basePrice * multiplier).toFixed(2);
   };
 
+  const handleQuantityChange = (delta: number) => {
+    onQuantityChange(Math.max(1, quantity + delta));
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* Left: Material List */}
-      <div className="flex-1 space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-4">1. Choose Material Family</h2>
-          <div className="space-y-3">
+    <div>
+      {/* Horizontal Sections Container - Match Preview Height */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {/* Section 1: Material Family */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col h-[500px]">
+          <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
+            Material Family
+          </h3>
+          <div className="space-y-1.5 overflow-y-auto flex-1 pr-2">
             {materials.map((m) => (
               <div
                 key={m.id}
                 onClick={() => onSelectMaterial(m.id)}
-                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
+                className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-all ${
                   selectedMaterial === m.id
-                    ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-1 ring-blue-600'
+                    ? 'border-blue-600 bg-blue-50 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
-                <div>
-                  <span className={`font-semibold text-sm block ${selectedMaterial === m.id ? 'text-blue-900' : 'text-slate-800'}`}>
-                    {m.name}
-                  </span>
-                  <span className="text-xs text-slate-500">{m.nameAr}</span>
-                </div>
+                <span className={`font-medium text-xs ${selectedMaterial === m.id ? 'text-blue-900' : 'text-slate-700'}`}>
+                  {m.name}
+                </span>
                 {selectedMaterial === m.id && (
-                  <div className="text-blue-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                  </div>
+                  <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
                 )}
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Right: Thickness & Pricing Panel (Sidebar Style) */}
-      <div className="w-full lg:w-80 flex flex-col gap-6">
-         {/* Thickness Selector */}
-         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wide">2. Select Thickness</h3>
-            <div className="space-y-2">
-              {THICKNESS_OPTIONS.map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => onSelectThickness(opt.value)}
-                  className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-all group ${
-                    thickness === opt.value
-                      ? 'border-blue-500 bg-blue-50 shadow-inner'
-                      : 'border-slate-100 hover:border-blue-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                       thickness === opt.value ? 'border-blue-600' : 'border-slate-300'
-                     }`}>
-                        {thickness === opt.value && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
-                     </div>
-                     <span className={`text-sm font-medium ${thickness === opt.value ? 'text-slate-900' : 'text-slate-600'}`}>
-                        {opt.label}
-                     </span>
+        {/* Section 2: Thickness */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col h-[500px]">
+          <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
+            Thickness
+          </h3>
+          <div className="space-y-1.5 overflow-y-auto flex-1 pr-2">
+            {THICKNESS_OPTIONS.map((opt) => (
+              <div
+                key={opt.value}
+                onClick={() => onSelectThickness(opt.value)}
+                className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-all ${
+                  thickness === opt.value
+                    ? 'border-blue-600 bg-blue-50 shadow-sm'
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                    thickness === opt.value ? 'border-blue-600' : 'border-slate-300'
+                  }`}>
+                    {thickness === opt.value && <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />}
                   </div>
-                  <div className="text-blue-600">
-                      <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"></path></svg>
-                  </div>
+                  <span className={`text-xs font-medium ${thickness === opt.value ? 'text-slate-900' : 'text-slate-600'}`}>
+                    {opt.label}
+                  </span>
                 </div>
-              ))}
-            </div>
-         </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-         {/* Real-time Pricing Widget */}
-         <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-            <div className="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
-               <span className="text-xs font-semibold text-slate-500 uppercase">Qty</span>
-               <div className="flex items-center bg-white border border-slate-300 rounded overflow-hidden h-8">
-                  <span className="px-3 text-sm font-bold text-slate-800">1</span>
-               </div>
-               <span className="text-sm font-bold text-slate-900">{basePrice.toFixed(2)} SAR/ea</span>
-            </div>
-            
-            <div className="space-y-2">
-                <div className="flex justify-between text-sm text-slate-600">
-                   <span>2+</span>
-                   <span className="font-medium">{getBulkPrice(2)}/ea</span>
-                </div>
-                <div className="flex justify-between text-sm text-slate-600">
-                   <span>10+</span>
-                   <span className="font-medium">{getBulkPrice(10)}/ea</span>
-                </div>
-                <div className="flex justify-between text-sm text-slate-600">
-                   <span>50+</span>
-                   <span className="font-medium text-green-600">{getBulkPrice(50)}/ea</span>
-                </div>
-                <div className="flex justify-between text-sm text-slate-600">
-                   <span>100+</span>
-                   <span className="font-medium text-green-700 font-bold">{getBulkPrice(100)}/ea</span>
-                </div>
-            </div>
+        {/* Section 3: Quantity & Pricing */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col h-[500px]">
+          <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">3</span>
+            Quantity
+          </h3>
 
-            <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
-                 <span className="text-xs text-slate-400">Arrives by Jan 8</span>
-                 <span className="text-lg font-bold text-slate-900">{basePrice.toFixed(2)} SAR</span>
+          {/* Quantity Selector */}
+          <div className="flex items-center justify-center gap-2.5 mb-4">
+            <button
+              onClick={() => handleQuantityChange(-1)}
+              disabled={quantity <= 1}
+              className="w-9 h-9 rounded-full border-2 border-slate-300 flex items-center justify-center hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path>
+              </svg>
+            </button>
+            <div className="w-14 h-9 flex items-center justify-center bg-slate-50 rounded-md border border-slate-200">
+              <span className="text-base font-bold text-slate-900">{quantity}</span>
             </div>
-         </div>
+            <button
+              onClick={() => handleQuantityChange(1)}
+              className="w-9 h-9 rounded-full border-2 border-slate-300 flex items-center justify-center hover:border-blue-500 hover:bg-blue-50 transition-all"
+            >
+              <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </button>
+          </div>
+
+          {/* Price per unit */}
+          <div className="text-center mb-3 pb-3 border-b border-slate-200">
+            <span className="text-xs text-slate-500">Price per unit</span>
+            <div className="text-xl font-bold text-slate-900">{basePrice.toFixed(2)} SAR</div>
+          </div>
+
+          {/* Bulk Pricing */}
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="text-xs font-semibold text-slate-500 uppercase mb-2">Bulk Pricing</div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-600">10+</span>
+                <span className="font-medium text-slate-900">{getBulkPrice(10)} SAR</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-600">50+</span>
+                <span className="font-medium text-green-600">{getBulkPrice(50)} SAR</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-600">100+</span>
+                <span className="font-bold text-green-700">{getBulkPrice(100)} SAR</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -200,64 +224,85 @@ export const StepService: React.FC<StepServiceProps> = ({
   services, finishes, selectedService, onSelectService, selectedFinish, onSelectFinish
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
-      
-      {/* Cutting Service */}
-      <section>
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">Manufacturing Method</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {services.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => onSelectService(s.id)}
-              className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                selectedService === s.id
-                  ? 'border-blue-600 bg-blue-50 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-blue-300'
-              }`}
-            >
-              <h3 className="font-bold text-slate-900">{s.name}</h3>
-              <p className="text-sm text-slate-500 mt-1">{s.nameAr}</p>
-              {s.basePricePerPart && s.basePricePerPart > 0 && (
-                <span className="mt-3 inline-block text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                  Setup: {s.basePricePerPart} SAR
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
+    <div>
+      {/* Horizontal Sections Container - Match Preview Height */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      {/* Finishing */}
-      <section>
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">Surface Finishing</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {finishes.map((f) => (
-            <div
-              key={f.id}
-              onClick={() => onSelectFinish(f.id)}
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                selectedFinish === f.id
-                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-indigo-300'
-              }`}
-            >
-              <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                selectedFinish === f.id ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
-              }`}>
-                {selectedFinish === f.id && <div className="w-2 h-2 bg-white rounded-full" />}
+        {/* Section 1: Manufacturing Method */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col h-[500px]">
+          <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
+            Manufacturing Method
+          </h3>
+          <div className="space-y-2 overflow-y-auto flex-1 pr-2">
+            {services.map((s) => (
+              <div
+                key={s.id}
+                onClick={() => onSelectService(s.id)}
+                className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  selectedService === s.id
+                    ? 'border-blue-600 bg-blue-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className={`font-semibold text-sm ${selectedService === s.id ? 'text-blue-900' : 'text-slate-900'}`}>
+                      {s.name}
+                    </h4>
+                    {s.basePricePerPart && s.basePricePerPart > 0 && (
+                      <span className="text-xs text-slate-500 mt-1 block">
+                        Setup: {s.basePricePerPart} SAR
+                      </span>
+                    )}
+                  </div>
+                  {selectedService === s.id && (
+                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900">{f.name}</h3>
-                <p className="text-sm text-slate-500">{f.nameAr}</p>
-              </div>
-              <div className="ml-auto text-xs text-slate-400 font-mono">
-                 {f.pricePerSqMeter > 0 ? `${f.pricePerSqMeter} SAR/m²` : 'Free'}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </section>
+
+        {/* Section 2: Surface Finishing */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col h-[500px]">
+          <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
+            Surface Finishing
+          </h3>
+          <div className="space-y-2 overflow-y-auto flex-1 pr-2">
+            {finishes.map((f) => (
+              <div
+                key={f.id}
+                onClick={() => onSelectFinish(f.id)}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  selectedFinish === f.id
+                    ? 'border-blue-600 bg-blue-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                  selectedFinish === f.id ? 'border-blue-600' : 'border-slate-300'
+                }`}>
+                  {selectedFinish === f.id && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className={`font-semibold text-sm ${selectedFinish === f.id ? 'text-blue-900' : 'text-slate-900'}`}>
+                    {f.name}
+                  </h4>
+                  <span className="text-xs text-slate-500">
+                    {f.pricePerSqMeter > 0 ? `${f.pricePerSqMeter} SAR/m²` : 'Included'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

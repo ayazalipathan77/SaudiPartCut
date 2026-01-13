@@ -8,7 +8,7 @@ interface WizardNavProps {
 
 const WizardNav: React.FC<WizardNavProps> = ({ currentStep, totalSteps, steps }) => {
   return (
-    <div className="w-full bg-white border-b border-slate-200 py-4 mb-8">
+    <div className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 py-4 mb-8 shadow-sm">
       <div className="max-w-4xl mx-auto px-4">
         <div className="relative flex items-center justify-between">
           {/* Connecting Line */}

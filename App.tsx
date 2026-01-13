@@ -74,6 +74,7 @@ const AppContent: React.FC = () => {
   const [materialId, setMaterialId] = useState<MaterialType>('mild_steel');
   const [serviceId, setServiceId] = useState<ServiceType>('laser_cut');
   const [finishingId, setFinishingId] = useState<FinishingType>('none');
+  const [quantity, setQuantity] = useState(1);
 
   const steps = ['Template', 'Design', 'Material', 'Service', 'Review'];
   const totalSteps = steps.length;
@@ -196,11 +197,6 @@ const AppContent: React.FC = () => {
                    Draft by {user.name}
                  </span>
                )}
-               {currentStep > 1 && currentStep < 5 && (
-                   <button onClick={prevStep} className="text-sm font-medium text-slate-500 hover:text-slate-800">
-                       &larr; Back
-                   </button>
-               )}
                <button onClick={() => setMode('landing')} className="text-sm font-medium text-slate-400 hover:text-red-500">
                    Exit
                </button>
@@ -240,13 +236,15 @@ const AppContent: React.FC = () => {
                      )}
 
                      {currentStep === 3 && (
-                        <StepMaterial 
+                        <StepMaterial
                             materials={materials}
-                            selectedMaterial={materialId} 
-                            onSelectMaterial={setMaterialId} 
+                            selectedMaterial={materialId}
+                            onSelectMaterial={setMaterialId}
                             thickness={dimensions.thickness}
                             onSelectThickness={(t) => setDimensions(prev => ({...prev, thickness: t}))}
                             basePrice={quote ? quote.total : 0}
+                            quantity={quantity}
+                            onQuantityChange={setQuantity}
                         />
                      )}
 
@@ -277,10 +275,13 @@ const AppContent: React.FC = () => {
 
       {/* Footer Controls (Steps 1-4) */}
       {currentStep < 5 && quote && (
-          <MiniQuoteTicker 
-            total={quote.total} 
-            onNext={nextStep} 
-            nextLabel={currentStep === 1 ? "Start Configuration" : "Next Step"} 
+          <MiniQuoteTicker
+            total={quote.total * quantity}
+            onNext={nextStep}
+            onBack={currentStep > 1 ? prevStep : undefined}
+            showBack={currentStep > 1}
+            nextLabel={currentStep === 1 ? "START CONFIGURATION" : "NEXT"}
+            materialInfo={currentStep >= 3 ? `${quantity} × ${materials.find(m => m.id === materialId)?.name || ''} @ ${dimensions.thickness}mm` : undefined}
           />
       )}
       

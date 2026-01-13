@@ -106,23 +106,65 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ quote, onOrder, onBack, spe
 };
 
 // --- Mini Footer Ticker for Steps 1-4 ---
-export const MiniQuoteTicker: React.FC<{ total: number; onNext: () => void; nextLabel?: string }> = ({ total, onNext, nextLabel = "Next Step" }) => {
+export const MiniQuoteTicker: React.FC<{
+  total: number;
+  onNext: () => void;
+  onBack?: () => void;
+  nextLabel?: string;
+  showBack?: boolean;
+  materialInfo?: string;
+}> = ({ total, onNext, onBack, nextLabel = "NEXT", showBack = true, materialInfo }) => {
     return (
         <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-50">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-                <div className="flex flex-col">
-                    <span className="text-xs text-slate-500 font-medium uppercase">Estimated Total</span>
-                    <span className="text-2xl font-bold text-slate-900">
-                        {new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(total)}
-                    </span>
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
+                {/* Left: Back Button */}
+                <div className="flex-shrink-0">
+                    {showBack && onBack && (
+                        <button
+                            onClick={onBack}
+                            className="px-6 py-3 text-slate-600 hover:text-slate-900 font-semibold transition-colors flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            BACK
+                        </button>
+                    )}
                 </div>
-                <button 
-                    onClick={onNext}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2"
-                >
-                    {nextLabel}
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </button>
+
+                {/* Center: Material Info & Price Display */}
+                <div className="flex items-center gap-6 flex-1 justify-center">
+                    {materialInfo && (
+                        <>
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                <span className="font-medium">{materialInfo}</span>
+                            </div>
+                            <div className="h-8 w-px bg-slate-300"></div>
+                        </>
+                    )}
+                    <div className="flex flex-col items-center">
+                        <span className="text-xs text-slate-500 font-medium uppercase">Estimated Total</span>
+                        <span className="text-2xl font-bold text-slate-900">
+                            {new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(total)}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right: Next Button */}
+                <div className="flex-shrink-0">
+                    <button
+                        onClick={onNext}
+                        className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-bold transition-colors flex items-center gap-2 uppercase text-sm tracking-wide"
+                    >
+                        {nextLabel}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     )
