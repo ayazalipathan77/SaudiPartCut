@@ -79,7 +79,7 @@ const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType 
   return (
     <group rotation={[Math.PI / 2, 0, 0]}>
       {/* Main mesh with professional material */}
-      <mesh ref={meshRef} castShadow receiveShadow>
+      <mesh ref={meshRef}>
         <extrudeGeometry args={[shape, extrudeSettings]} />
         <meshStandardMaterial
           {...matProps}
@@ -131,32 +131,30 @@ const AutoFrameCamera: React.FC<{ dimensions: PartDimensions }> = ({ dimensions 
   return null;
 };
 
-// Professional CAD lighting rig
+// Professional CAD lighting rig - balanced lighting for all sides
 const StudioLighting: React.FC = () => {
   return (
     <>
-      {/* Primary key light - front top right */}
-      <directionalLight
-        position={[5, 8, 5]}
-        intensity={0.9}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-      />
+      {/* Front light */}
+      <directionalLight position={[0, 0, 5]} intensity={0.8} />
 
-      {/* Fill light - rear left, softer */}
-      <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+      {/* Back light - equal intensity to front */}
+      <directionalLight position={[0, 0, -5]} intensity={0.8} />
 
-      {/* Ambient base lighting */}
-      <ambientLight intensity={0.3} />
+      {/* Top light */}
+      <directionalLight position={[0, 5, 0]} intensity={0.6} />
 
-      {/* Subtle hemisphere light for natural feel */}
-      <hemisphereLight args={['#ffffff', '#444444', 0.3]} />
+      {/* Bottom light */}
+      <directionalLight position={[0, -5, 0]} intensity={0.6} />
+
+      {/* Left light */}
+      <directionalLight position={[-5, 0, 0]} intensity={0.6} />
+
+      {/* Right light */}
+      <directionalLight position={[5, 0, 0]} intensity={0.6} />
+
+      {/* Strong ambient base for even illumination */}
+      <ambientLight intensity={0.6} />
     </>
   );
 };
@@ -242,12 +240,10 @@ const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId })
     <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg overflow-hidden relative shadow-inner">
       <Canvas
         dpr={[1, 2]}
-        shadows
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,
-          outputEncoding: THREE.sRGBEncoding,
         }}
       >
         <OrthographicCamera makeDefault position={[0, 0, 1000]} zoom={1} />
