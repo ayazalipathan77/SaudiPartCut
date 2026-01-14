@@ -4,16 +4,17 @@ interface WizardNavProps {
   currentStep: number;
   totalSteps: number;
   steps: string[];
+  onStepClick?: (step: number) => void;
 }
 
-const WizardNav: React.FC<WizardNavProps> = ({ currentStep, totalSteps, steps }) => {
+const WizardNav: React.FC<WizardNavProps> = ({ currentStep, totalSteps, steps, onStepClick }) => {
   return (
     <div className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 py-4 mb-8 shadow-sm">
       <div className="max-w-4xl mx-auto px-4">
         <div className="relative flex items-center justify-between">
           {/* Connecting Line */}
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 -z-10 rounded-full"></div>
-          <div 
+          <div
             className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-100 -z-10 rounded-full transition-all duration-500"
             style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
           ></div>
@@ -22,15 +23,20 @@ const WizardNav: React.FC<WizardNavProps> = ({ currentStep, totalSteps, steps })
             const stepNum = index + 1;
             const isActive = stepNum === currentStep;
             const isCompleted = stepNum < currentStep;
+            const isClickable = isCompleted || isActive;
 
             return (
-              <div key={index} className="flex flex-col items-center gap-2 bg-white px-2">
-                <div 
+              <div
+                key={index}
+                className={`flex flex-col items-center gap-2 bg-white px-2 ${isClickable && onStepClick ? 'cursor-pointer' : ''}`}
+                onClick={() => isClickable && onStepClick && onStepClick(stepNum)}
+              >
+                <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300
-                    ${isActive 
-                      ? 'border-blue-600 bg-blue-600 text-white scale-110 shadow-md' 
-                      : isCompleted 
-                        ? 'border-blue-600 bg-white text-blue-600' 
+                    ${isActive
+                      ? 'border-blue-600 bg-blue-600 text-white scale-110 shadow-md'
+                      : isCompleted
+                        ? 'border-blue-600 bg-white text-blue-600 hover:bg-blue-50'
                         : 'border-slate-200 bg-white text-slate-400'
                     }`}
                 >
@@ -40,7 +46,7 @@ const WizardNav: React.FC<WizardNavProps> = ({ currentStep, totalSteps, steps })
                     stepNum
                   )}
                 </div>
-                <span className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                <span className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-blue-600' : isCompleted ? 'text-slate-600 hover:text-blue-600' : 'text-slate-400'}`}>
                   {step}
                 </span>
               </div>

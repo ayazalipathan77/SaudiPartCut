@@ -81,6 +81,7 @@ const AppContent: React.FC = () => {
 
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, totalSteps));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  const goToStep = (step: number) => setCurrentStep(Math.max(1, Math.min(step, totalSteps)));
 
   // Real-time pricing calculation
   const quote = useMemo(() => {
@@ -205,7 +206,7 @@ const AppContent: React.FC = () => {
       </header>
 
       {/* Progress Bar */}
-      <WizardNav currentStep={currentStep} totalSteps={totalSteps} steps={steps} />
+      <WizardNav currentStep={currentStep} totalSteps={totalSteps} steps={steps} onStepClick={goToStep} />
 
       {/* Main Content Area */}
       <main className="flex-grow max-w-7xl mx-auto px-4 w-full pb-32">

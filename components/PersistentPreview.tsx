@@ -14,18 +14,19 @@ const PersistentPreview: React.FC<PersistentPreviewProps> = ({ dimensions, mater
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden sticky top-24 h-[500px] flex flex-col">
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-          <button 
+      {/* View Mode Toggle Buttons - Left Side */}
+      <div className="absolute top-4 left-4 z-10 flex gap-2">
+          <button
               onClick={() => setViewMode('2d')}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-sm ${viewMode === '2d' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-sm ${viewMode === '2d' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-300'}`}
           >
-              2D View
+              2D
           </button>
-          <button 
+          <button
               onClick={() => setViewMode('3d')}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-sm ${viewMode === '3d' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-sm ${viewMode === '3d' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-300'}`}
           >
-              3D Render
+              3D
           </button>
       </div>
 
@@ -39,11 +40,15 @@ const PersistentPreview: React.FC<PersistentPreviewProps> = ({ dimensions, mater
                   <Part3DPreview dimensions={dimensions} materialId={materialId} />
               </div>
           )}
-      </div>
-      
-      <div className="bg-white p-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-          <span>{dimensions.width}mm x {dimensions.height}mm</span>
-          <span>Thickness: {dimensions.thickness}mm</span>
+
+          {/* Dimensions Label - Bottom Right */}
+          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md border border-slate-200">
+              <div className="flex items-center gap-3 text-xs text-slate-600">
+                  <span>{dimensions.width}mm × {dimensions.height}mm</span>
+                  <span className="text-slate-300">|</span>
+                  <span>Thickness: {dimensions.thickness}mm</span>
+              </div>
+          </div>
       </div>
     </div>
   );

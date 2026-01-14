@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stage, PerspectiveCamera } from '@react-three/drei';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { PartDimensions, MaterialType } from '../types';
 
@@ -9,24 +9,26 @@ interface Part3DPreviewProps {
   materialId: MaterialType;
 }
 
+// Professional CAD material configurations
 const MaterialConfig: Record<string, any> = {
-  mild_steel: { color: '#5a5a5a', roughness: 0.7, metalness: 0.5 },
-  stainless_304: { color: '#e0e0e0', roughness: 0.3, metalness: 0.9 },
-  stainless_316: { color: '#f0f0f0', roughness: 0.2, metalness: 1.0 },
-  aluminum: { color: '#d4d4d4', roughness: 0.5, metalness: 0.6 },
-  brass: { color: '#d4af37', roughness: 0.3, metalness: 0.8 },
+  mild_steel: { color: '#8b9196', roughness: 0.6, metalness: 0.3 },
+  stainless_304: { color: '#c0c5ca', roughness: 0.5, metalness: 0.25 },
+  stainless_316: { color: '#d0d5da', roughness: 0.5, metalness: 0.25 },
+  aluminum: { color: '#b8bec3', roughness: 0.55, metalness: 0.28 },
+  brass: { color: '#c9a961', roughness: 0.5, metalness: 0.3 },
 };
 
 const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType }> = ({ dimensions, materialId }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  
+  const edgesRef = useRef<THREE.LineSegments>(null);
+
   // Create Geometry
   const shape = useMemo(() => {
     const s = new THREE.Shape();
     const w = dimensions.width;
     const h = dimensions.height;
     const r = Math.min(dimensions.cornerRadius, w / 2, h / 2);
-    
+
     // Draw rounded rect
     s.moveTo(0, r);
     s.lineTo(0, h - r);
@@ -41,7 +43,7 @@ const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType 
     // Create holes
     const holeRadius = dimensions.holeDiameter / 2;
     const holeInset = Math.max(dimensions.cornerRadius, holeRadius * 3);
-    
+
     const holePositions = [
         [holeInset, holeInset],
         [w - holeInset, holeInset],
@@ -66,52 +68,162 @@ const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType 
     bevelSegments: 3
   }), [dimensions.thickness]);
 
+  // Create edges geometry for silhouette enhancement
+  const edgesGeometry = useMemo(() => {
+    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    return new THREE.EdgesGeometry(geom, 15); // 15 degree threshold for edge detection
+  }, [shape, extrudeSettings]);
+
   const matProps = MaterialConfig[materialId] || MaterialConfig['mild_steel'];
 
   return (
-    <mesh ref={meshRef} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-      <extrudeGeometry args={[shape, extrudeSettings]} />
-      <meshStandardMaterial {...matProps} envMapIntensity={1} />
-    </mesh>
+    <group rotation={[Math.PI / 2, 0, 0]}>
+      {/* Main mesh with professional material */}
+      <mesh ref={meshRef} castShadow receiveShadow>
+        <extrudeGeometry args={[shape, extrudeSettings]} />
+        <meshStandardMaterial
+          {...matProps}
+          side={THREE.DoubleSide}
+          flatShading={false}
+          toneMapped={true}
+        />
+      </mesh>
+
+      {/* Edge enhancement for crisp silhouette */}
+      <lineSegments ref={edgesRef} geometry={edgesGeometry}>
+        <lineBasicMaterial color="#2d3748" linewidth={1} transparent opacity={0.4} />
+      </lineSegments>
+    </group>
   );
 };
 
-// Camera Tracker - Updates parent component with camera rotation
-const CameraTracker: React.FC<{ onRotationChange: (rotation: { x: number; y: number; z: number }) => void }> = ({ onRotationChange }) => {
+// Auto-framing component - calculates optimal camera position for any geometry (only on mount)
+const AutoFrameCamera: React.FC<{ dimensions: PartDimensions }> = ({ dimensions }) => {
   const { camera } = useThree();
+  const hasFramed = React.useRef(false);
 
-  useFrame(() => {
-    // Convert camera position to rotation angles
-    const euler = new THREE.Euler().setFromQuaternion(camera.quaternion);
-    onRotationChange({
-      x: euler.x * (180 / Math.PI),
-      y: euler.y * (180 / Math.PI),
-      z: euler.z * (180 / Math.PI)
-    });
-  });
+  useEffect(() => {
+    // Only auto-frame once on initial mount
+    if (hasFramed.current) return;
+
+    const w = dimensions.width;
+    const h = dimensions.height;
+    const t = dimensions.thickness;
+
+    // Calculate bounding sphere radius (use max of width/height for consistent framing)
+    const maxDimension = Math.max(w, h);
+    const boundingRadius = Math.sqrt(maxDimension * maxDimension + t * t) / 2;
+
+    // Position camera at optimal distance with slight elevation
+    const distance = boundingRadius * 3.5; // Increased multiplier for better initial fit
+    camera.position.set(distance * 0.7, distance * 0.5, distance * 0.7);
+    camera.lookAt(w / 2, h / 2, t / 2);
+    camera.updateProjectionMatrix();
+
+    hasFramed.current = true;
+  }, []); // Empty deps - only run on mount
 
   return null;
 };
 
-// View Cube Component
-const ViewCube: React.FC<{ rotation: { x: number; y: number; z: number } }> = ({ rotation }) => {
+// Professional CAD lighting rig
+const StudioLighting: React.FC = () => {
   return (
-    <div className="absolute top-4 right-4 w-20 h-20 pointer-events-none">
+    <>
+      {/* Primary key light - front top right */}
+      <directionalLight
+        position={[5, 8, 5]}
+        intensity={0.9}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={50}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
+      />
+
+      {/* Fill light - rear left, softer */}
+      <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+
+      {/* Ambient base lighting */}
+      <ambientLight intensity={0.3} />
+
+      {/* Subtle hemisphere light for natural feel */}
+      <hemisphereLight args={['#ffffff', '#444444', 0.3]} />
+    </>
+  );
+};
+
+// Camera rotation tracker - runs inside Canvas and updates parent state
+const CameraRotationTracker: React.FC<{ onRotationUpdate: (rotation: { x: number; y: number; z: number }) => void }> = ({ onRotationUpdate }) => {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    const updateRotation = () => {
+      const euler = new THREE.Euler().setFromQuaternion(camera.quaternion);
+      onRotationUpdate({
+        x: euler.x * (180 / Math.PI),
+        y: euler.y * (180 / Math.PI),
+        z: euler.z * (180 / Math.PI),
+      });
+    };
+
+    updateRotation();
+    const interval = setInterval(updateRotation, 50);
+    return () => clearInterval(interval);
+  }, [camera, onRotationUpdate]);
+
+  return null;
+};
+
+// Orientation cube widget - displays camera orientation (outside Canvas)
+const OrientationCubeWidget: React.FC<{ rotation: { x: number; y: number; z: number } }> = ({ rotation }) => {
+  return (
+    <div className="absolute top-4 right-4 w-16 h-16 pointer-events-none">
       <div
-        className="relative w-full h-full transform-gpu preserve-3d transition-transform duration-100"
+        className="relative w-full h-full"
         style={{
-          transform: `rotateX(${-rotation.x}deg) rotateY(${-rotation.y}deg) rotateZ(${rotation.z}deg)`
+          transform: `rotateX(${-rotation.x}deg) rotateY(${-rotation.y}deg)`,
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.1s ease-out',
         }}
       >
-        {/* Cube faces */}
-        <div className="absolute inset-0 bg-white/90 border border-slate-300 rounded-lg shadow-lg flex items-center justify-center text-xs font-bold text-slate-600">
+        {/* Front face */}
+        <div
+          className="absolute inset-0 bg-blue-500/80 border border-blue-600 rounded flex items-center justify-center text-white text-xs font-bold"
+          style={{ transform: 'translateZ(32px)' }}
+        >
           F
         </div>
-        <div className="absolute top-0 right-0 w-8 h-8 bg-white/70 border-l border-t border-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500 transform origin-left -skew-y-12">
-          T
+        {/* Back face */}
+        <div
+          className="absolute inset-0 bg-slate-400/80 border border-slate-500 rounded flex items-center justify-center text-white text-xs font-bold"
+          style={{ transform: 'translateZ(-32px) rotateY(180deg)' }}
+        >
+          B
         </div>
-        <div className="absolute bottom-0 right-0 w-8 h-20 bg-white/60 border-l border-b border-slate-300 flex items-center justify-center text-[8px] font-bold text-slate-500 transform origin-left skew-y-12">
+        {/* Right face */}
+        <div
+          className="absolute inset-0 bg-green-500/80 border border-green-600 rounded flex items-center justify-center text-white text-xs font-bold"
+          style={{ transform: 'rotateY(90deg) translateZ(32px)' }}
+        >
           R
+        </div>
+        {/* Left face */}
+        <div
+          className="absolute inset-0 bg-red-500/80 border border-red-600 rounded flex items-center justify-center text-white text-xs font-bold"
+          style={{ transform: 'rotateY(-90deg) translateZ(32px)' }}
+        >
+          L
+        </div>
+        {/* Top face */}
+        <div
+          className="absolute inset-0 bg-yellow-500/80 border border-yellow-600 rounded flex items-center justify-center text-white text-xs font-bold"
+          style={{ transform: 'rotateX(90deg) translateZ(32px)' }}
+        >
+          T
         </div>
       </div>
     </div>
@@ -119,25 +231,56 @@ const ViewCube: React.FC<{ rotation: { x: number; y: number; z: number } }> = ({
 };
 
 const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId }) => {
-  const [cameraRotation, setCameraRotation] = useState({ x: 20, y: -30, z: 0 });
+  const [cameraRotation, setCameraRotation] = React.useState({ x: 0, y: 0, z: 0 });
 
   return (
-    <div className="w-full h-full bg-slate-50 rounded-lg overflow-hidden relative">
-      <Canvas shadows dpr={[1, 2]}>
-        <PerspectiveCamera makeDefault position={[0, 0, 300]} fov={50} />
-        <Stage environment="city" intensity={0.6} adjustCamera={1.2}>
-          <PartMesh dimensions={dimensions} materialId={materialId} />
-        </Stage>
-        <OrbitControls autoRotate autoRotateSpeed={2} makeDefault />
-        <CameraTracker onRotationChange={setCameraRotation} />
+    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg overflow-hidden relative shadow-inner">
+      <Canvas
+        dpr={[1, 2]}
+        shadows
+        gl={{
+          antialias: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
+          outputEncoding: THREE.sRGBEncoding,
+        }}
+      >
+        <PerspectiveCamera makeDefault position={[300, 200, 300]} fov={40} />
+
+        {/* Professional studio lighting */}
+        <StudioLighting />
+
+        {/* Auto-frame camera for optimal view */}
+        <AutoFrameCamera dimensions={dimensions} />
+
+        {/* Rendered part with edge enhancement */}
+        <PartMesh dimensions={dimensions} materialId={materialId} />
+
+        {/* Camera rotation tracker */}
+        <CameraRotationTracker onRotationUpdate={setCameraRotation} />
+
+        {/* Optimized CAD-style controls */}
+        <OrbitControls
+          makeDefault
+          enableDamping
+          dampingFactor={0.08}
+          rotateSpeed={0.6}
+          zoomSpeed={0.8}
+          panSpeed={0.5}
+          minDistance={50}
+          maxDistance={1000}
+          target={[dimensions.width / 2, dimensions.height / 2, dimensions.thickness / 2]}
+        />
       </Canvas>
 
-      {/* View Cube */}
-      <ViewCube rotation={cameraRotation} />
+      {/* Orientation widget */}
+      <OrientationCubeWidget rotation={cameraRotation} />
 
       {/* Controls hint */}
-      <div className="absolute bottom-4 left-4 text-slate-400 text-xs font-medium pointer-events-none">
-          Left Click: Rotate • Scroll: Zoom
+      <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
+        <p className="text-slate-600 text-xs font-medium">
+          🖱️ Rotate • 🔍 Zoom • ⌨️ Pan
+        </p>
       </div>
     </div>
   );
