@@ -11,8 +11,12 @@ const PartPreview: React.FC<PartPreviewProps> = ({ dimensions, materialColor }) 
 
   // Calculate SVG ViewBox to center the part with some padding
   const padding = Math.max(width, height) * 0.2;
-  const viewBoxWidth = width + padding * 2;
-  const viewBoxHeight = height + padding * 2;
+  const leftPadding = Math.max(padding, 80); // Extra padding for vertical text measurement
+  const topPadding = Math.max(padding, 50); // Extra padding for horizontal text measurement
+  const rightPadding = Math.max(padding, 80); // Match left padding for centering
+  const bottomPadding = Math.max(padding, 50); // Match top padding for centering
+  const viewBoxWidth = width + leftPadding + rightPadding;
+  const viewBoxHeight = height + topPadding + bottomPadding;
 
   // Generate Path Data
   const pathData = useMemo(() => {
@@ -64,7 +68,7 @@ const PartPreview: React.FC<PartPreviewProps> = ({ dimensions, materialColor }) 
       <svg
         width="100%"
         height="100%"
-        viewBox={`${-padding} ${-padding} ${viewBoxWidth} ${viewBoxHeight}`}
+        viewBox={`${-leftPadding} ${-topPadding} ${viewBoxWidth} ${viewBoxHeight}`}
         className="max-w-full max-h-[600px] drop-shadow-xl transition-all duration-300 ease-out"
       >
         {/* Measurement Lines (Simplified) */}
