@@ -277,7 +277,7 @@ const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId })
       <OrientationCubeWidget rotation={cameraRotation} />
 
       {/* Controls hint */}
-      <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
+      <div className="absolute bottom-4 right-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
         <p className="text-slate-600 text-xs font-medium">
           🖱️ Rotate • 🔍 Zoom • ⌨️ Pan
         </p>

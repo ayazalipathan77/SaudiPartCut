@@ -49,7 +49,7 @@ const PartPreview: React.FC<PartPreviewProps> = ({ dimensions, materialColor }) 
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-slate-50 border border-slate-200 rounded-lg shadow-inner overflow-hidden relative">
-      <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded text-xs text-slate-500 font-mono border border-slate-200">
+      <div className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded text-xs text-slate-500 font-mono border border-slate-200">
         Preview Scale: 1:1 (Approx)
       </div>
       

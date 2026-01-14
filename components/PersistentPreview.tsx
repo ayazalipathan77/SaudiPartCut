@@ -32,7 +32,7 @@ const PersistentPreview: React.FC<PersistentPreviewProps> = ({ dimensions, mater
 
       <div className="flex-1 bg-slate-100 relative">
           {viewMode === '2d' ? (
-              <div className="w-full h-full p-4">
+              <div className="w-full h-full">
                   <PartPreview dimensions={dimensions} materialColor={previewColor} />
               </div>
           ) : (
