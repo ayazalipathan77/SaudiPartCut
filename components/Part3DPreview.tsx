@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { PartDimensions, MaterialType } from '../types';
 
@@ -97,9 +97,9 @@ const PartMesh: React.FC<{ dimensions: PartDimensions; materialId: MaterialType 
   );
 };
 
-// Auto-framing component - calculates optimal camera position for any geometry (only on mount)
+// Auto-framing component - calculates optimal camera zoom for orthographic view (only on mount)
 const AutoFrameCamera: React.FC<{ dimensions: PartDimensions }> = ({ dimensions }) => {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const hasFramed = React.useRef(false);
 
   useEffect(() => {
@@ -110,15 +110,20 @@ const AutoFrameCamera: React.FC<{ dimensions: PartDimensions }> = ({ dimensions 
     const h = dimensions.height;
     const t = dimensions.thickness;
 
-    // Calculate bounding sphere radius (use max of width/height for consistent framing)
+    // For orthographic camera, calculate zoom based on viewport and object size
     const maxDimension = Math.max(w, h);
-    const boundingRadius = Math.sqrt(maxDimension * maxDimension + t * t) / 2;
+    const aspect = size.width / size.height;
+    const frustumSize = maxDimension * 2; // Add padding around the object
 
-    // Position camera at optimal distance with slight elevation
-    const distance = boundingRadius * 3.5; // Increased multiplier for better initial fit
-    camera.position.set(distance * 0.7, distance * 0.5, distance * 0.7);
-    camera.lookAt(w / 2, h / 2, t / 2);
-    camera.updateProjectionMatrix();
+    if (camera instanceof THREE.OrthographicCamera) {
+      camera.left = -frustumSize * aspect / 2;
+      camera.right = frustumSize * aspect / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
+      camera.position.set(0, 0, 1000); // Fixed distance for orthographic
+      camera.lookAt(w / 2, h / 2, t / 2);
+      camera.updateProjectionMatrix();
+    }
 
     hasFramed.current = true;
   }, []); // Empty deps - only run on mount
@@ -245,7 +250,7 @@ const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId })
           outputEncoding: THREE.sRGBEncoding,
         }}
       >
-        <PerspectiveCamera makeDefault position={[300, 200, 300]} fov={40} />
+        <OrthographicCamera makeDefault position={[0, 0, 1000]} zoom={1} />
 
         {/* Professional studio lighting */}
         <StudioLighting />
@@ -259,16 +264,14 @@ const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId })
         {/* Camera rotation tracker */}
         <CameraRotationTracker onRotationUpdate={setCameraRotation} />
 
-        {/* Optimized CAD-style controls */}
+        {/* Optimized CAD-style controls - rotation only */}
         <OrbitControls
           makeDefault
           enableDamping
           dampingFactor={0.08}
           rotateSpeed={0.6}
-          zoomSpeed={0.8}
-          panSpeed={0.5}
-          minDistance={50}
-          maxDistance={1000}
+          enableZoom={false}
+          enablePan={false}
           target={[dimensions.width / 2, dimensions.height / 2, dimensions.thickness / 2]}
         />
       </Canvas>
@@ -279,7 +282,7 @@ const Part3DPreview: React.FC<Part3DPreviewProps> = ({ dimensions, materialId })
       {/* Controls hint */}
       <div className="absolute bottom-4 right-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
         <p className="text-slate-600 text-xs font-medium">
-          🖱️ Rotate • 🔍 Zoom • ⌨️ Pan
+          🖱️ Drag to Rotate
         </p>
       </div>
     </div>
