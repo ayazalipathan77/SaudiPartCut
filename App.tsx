@@ -285,19 +285,6 @@ const AppContent: React.FC = () => {
                   <div className="lg:w-1/2 order-1 lg:order-1">
                       {selectedShape && (
                         <div className="sticky top-4">
-                          {/* Shape Title Card */}
-                          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4 shadow-sm">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="text-lg font-semibold text-slate-900">{selectedShape.name}</h3>
-                                <p className="text-sm text-slate-500 mt-1">{selectedShape.description}</p>
-                              </div>
-                              <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-md">
-                                {selectedShape.category || 'Custom'}
-                              </span>
-                            </div>
-                          </div>
-                          {/* Shape Preview */}
                           <DynamicShapePreview
                             svgGenerator={selectedShape.svg_path_generator || undefined}
                             threejsGenerator={selectedShape.threejs_shape_generator || undefined}
