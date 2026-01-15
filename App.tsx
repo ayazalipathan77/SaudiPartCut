@@ -8,16 +8,20 @@ import OrderSummary, { MiniQuoteTicker } from './components/OrderSummary';
 import LandingPage from './components/LandingPage';
 import AdminApp from './components/admin/AdminApp';
 import AuthModal from './components/AuthModal';
+import CartPage from './components/CartPage';
+import CheckoutPage from './components/CheckoutPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider, useCart } from './context/CartContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
 import { calculateQuote } from './utils/pricing';
 import { api } from './services/api';
 import { Shape } from './services/apiClient';
 
-type AppMode = 'landing' | 'wizard' | 'admin';
+type AppMode = 'landing' | 'wizard' | 'admin' | 'cart' | 'checkout';
 
 const AppContent: React.FC = () => {
   const { user, logout } = useAuth();
+  const { addItem, itemCount } = useCart();
   const [mode, setMode] = useState<AppMode>('landing');
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,11 +182,31 @@ const AppContent: React.FC = () => {
     setShapeParams(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleOrder = () => {
-    alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote?.total.toFixed(2)}`);
-    // Reset state after order confirmation
+  const handleAddToCart = () => {
+    if (!selectedShape || !quote) return;
+
+    addItem({
+      shape: selectedShape,
+      shapeParams: shapeParams,
+      materialId: materialId,
+      serviceId: serviceId,
+      finishingId: finishingId,
+      thickness: dimensions.thickness,
+      quantity: quantity,
+      quote: quote,
+      materialName: materials.find(m => m.id === materialId)?.name || '',
+      serviceName: services.find(s => s.id === serviceId)?.name || '',
+      finishingName: finishes.find(f => f.id === finishingId)?.name || '',
+    });
+
+    // Reset state and go to cart
     resetWizardState();
-    setMode('landing');
+    setMode('cart');
+  };
+
+  const handleOrder = () => {
+    // Now this finalizes a single item order
+    handleAddToCart();
   };
 
   const handleStartQuote = () => {
@@ -218,6 +242,42 @@ const AppContent: React.FC = () => {
   // Admin View - Now uses the new AdminApp with backend integration
   if (mode === 'admin') {
      return <AdminApp />;
+  }
+
+  // Cart View
+  if (mode === 'cart') {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        {/* Cart Header */}
+        <header className="bg-white border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setMode('landing')}>
+              <div className="bg-blue-600 text-white p-1 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+              </div>
+              <span className="text-xl font-bold text-slate-900 tracking-tight">SaudiPart<span className="text-blue-600">Config</span></span>
+            </div>
+          </div>
+        </header>
+        <CartPage
+          onContinueShopping={() => setMode('wizard')}
+          onCheckout={() => setMode('checkout')}
+        />
+      </div>
+    );
+  }
+
+  // Checkout View
+  if (mode === 'checkout') {
+    return (
+      <CheckoutPage
+        onBack={() => setMode('cart')}
+        onComplete={() => {
+          alert('Order placed successfully! You will receive a confirmation email shortly.');
+          setMode('landing');
+        }}
+      />
+    );
   }
 
   // Landing View
@@ -259,6 +319,21 @@ const AppContent: React.FC = () => {
                    Draft by {user.name}
                  </span>
                )}
+               {/* Cart Button */}
+               <button
+                 onClick={() => setMode('cart')}
+                 className="relative p-2 text-slate-600 hover:text-blue-600 transition-colors"
+                 title="View Cart"
+               >
+                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                 </svg>
+                 {itemCount > 0 && (
+                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                     {itemCount}
+                   </span>
+                 )}
+               </button>
                <button onClick={() => { resetWizardState(); setMode('landing'); }} className="text-sm font-medium text-slate-400 hover:text-red-500">
                    Exit
                </button>
@@ -336,6 +411,7 @@ const AppContent: React.FC = () => {
                     quote={quote}
                     onOrder={handleOrder}
                     onBack={prevStep}
+                    onAddToCart={handleAddToCart}
                     specSummary={getSummaryNames()}
                 />
             )}
@@ -375,7 +451,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
     </AuthProvider>
   );
 };
