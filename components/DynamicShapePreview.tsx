@@ -61,43 +61,198 @@ const generateDefaultPath = (params: Record<string, any>): string => {
   `;
 };
 
+// Parse SVG path to THREE.Shape
+const svgPathToShape = (svgPath: string): THREE.Shape => {
+  const shape = new THREE.Shape();
+  const commands = svgPath.match(/[MLHVCSQTAZ][^MLHVCSQTAZ]*/gi) || [];
+
+  let currentX = 0;
+  let currentY = 0;
+  let startX = 0;
+  let startY = 0;
+
+  commands.forEach(cmd => {
+    const type = cmd[0].toUpperCase();
+    const args = cmd.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+
+    switch (type) {
+      case 'M': // Move to
+        currentX = args[0];
+        currentY = args[1];
+        startX = currentX;
+        startY = currentY;
+        shape.moveTo(currentX, currentY);
+        break;
+      case 'L': // Line to
+        currentX = args[0];
+        currentY = args[1];
+        shape.lineTo(currentX, currentY);
+        break;
+      case 'H': // Horizontal line
+        currentX = args[0];
+        shape.lineTo(currentX, currentY);
+        break;
+      case 'V': // Vertical line
+        currentY = args[0];
+        shape.lineTo(currentX, currentY);
+        break;
+      case 'A': // Arc - simplified handling
+        // args: rx, ry, rotation, large-arc, sweep, x, y
+        if (args.length >= 7) {
+          const rx = args[0];
+          const ry = args[1];
+          const endX = args[5];
+          const endY = args[6];
+          // Approximate arc with quadratic curve for simplicity
+          const midX = (currentX + endX) / 2;
+          const midY = (currentY + endY) / 2;
+          // Use bezier approximation
+          shape.absarc(midX, midY, rx, 0, Math.PI * 2, false);
+          currentX = endX;
+          currentY = endY;
+        }
+        break;
+      case 'Z': // Close path
+        shape.lineTo(startX, startY);
+        break;
+    }
+  });
+
+  return shape;
+};
+
+// Create shape based on parameters - more reliable than parsing SVG
+const createShapeFromParams = (parameters: Record<string, any>): THREE.Shape => {
+  const shape = new THREE.Shape();
+
+  // Detect shape type from parameters
+  if (parameters.diameter !== undefined) {
+    // Circle
+    const radius = Number(parameters.diameter) / 2;
+    shape.absarc(radius, radius, radius, 0, Math.PI * 2, false);
+    return shape;
+  }
+
+  if (parameters.outerDiameter !== undefined && parameters.innerDiameter !== undefined) {
+    // Ring - outer circle (inner hole handled separately)
+    const outerR = Number(parameters.outerDiameter) / 2;
+    const innerR = Number(parameters.innerDiameter) / 2;
+    shape.absarc(outerR, outerR, outerR, 0, Math.PI * 2, false);
+    // Add inner hole
+    const holePath = new THREE.Path();
+    holePath.absarc(outerR, outerR, innerR, 0, Math.PI * 2, true);
+    shape.holes.push(holePath);
+    return shape;
+  }
+
+  if (parameters.base !== undefined && parameters.height !== undefined && parameters.width === undefined) {
+    // Triangle - isoceles triangle pointing up
+    const base = Number(parameters.base);
+    const h = Number(parameters.height);
+    shape.moveTo(0, 0);           // bottom left
+    shape.lineTo(base, 0);        // bottom right
+    shape.lineTo(base / 2, h);    // top center
+    shape.closePath();
+    return shape;
+  }
+
+  if (parameters.size !== undefined && parameters.width === undefined) {
+    // Hexagon
+    const size = Number(parameters.size);
+    const r = size / 2;
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      const x = r + r * Math.cos(angle);
+      const y = r + r * Math.sin(angle);
+      if (i === 0) {
+        shape.moveTo(x, y);
+      } else {
+        shape.lineTo(x, y);
+      }
+    }
+    shape.closePath();
+    return shape;
+  }
+
+  if (parameters.armWidth !== undefined) {
+    // L-Bracket
+    const w = Number(parameters.width) || 150;
+    const h = Number(parameters.height) || 100;
+    const armW = Number(parameters.armWidth) || 30;
+    shape.moveTo(0, 0);
+    shape.lineTo(w, 0);
+    shape.lineTo(w, armW);
+    shape.lineTo(armW, armW);
+    shape.lineTo(armW, h);
+    shape.lineTo(0, h);
+    shape.closePath();
+    return shape;
+  }
+
+  if (parameters.flangeWidth !== undefined && parameters.baseHeight !== undefined) {
+    // U-Channel
+    const w = Number(parameters.width) || 150;
+    const h = Number(parameters.height) || 100;
+    const flange = Number(parameters.flangeWidth) || 30;
+    const base = Number(parameters.baseHeight) || 25;
+    shape.moveTo(0, 0);
+    shape.lineTo(flange, 0);
+    shape.lineTo(flange, h - base);
+    shape.lineTo(w - flange, h - base);
+    shape.lineTo(w - flange, 0);
+    shape.lineTo(w, 0);
+    shape.lineTo(w, h);
+    shape.lineTo(0, h);
+    shape.closePath();
+    return shape;
+  }
+
+  // Default: Rectangle with optional corner radius
+  const width = Number(parameters.width) || 200;
+  const height = Number(parameters.height) || 150;
+  const cornerRadius = Number(parameters.cornerRadius) || 0;
+  const r = Math.min(cornerRadius, width / 2, height / 2);
+
+  if (r === 0) {
+    shape.moveTo(0, 0);
+    shape.lineTo(width, 0);
+    shape.lineTo(width, height);
+    shape.lineTo(0, height);
+    shape.closePath();
+  } else {
+    shape.moveTo(r, 0);
+    shape.lineTo(width - r, 0);
+    shape.quadraticCurveTo(width, 0, width, r);
+    shape.lineTo(width, height - r);
+    shape.quadraticCurveTo(width, height, width - r, height);
+    shape.lineTo(r, height);
+    shape.quadraticCurveTo(0, height, 0, height - r);
+    shape.lineTo(0, r);
+    shape.quadraticCurveTo(0, 0, r, 0);
+  }
+
+  return shape;
+};
+
 // 3D Shape Component
 const Shape3D: React.FC<{
+  svgPath: string;
   parameters: Record<string, any>;
   color: string;
   thickness: number;
-}> = ({ parameters, color, thickness }) => {
+}> = ({ svgPath, parameters, color, thickness }) => {
   const geometry = useMemo(() => {
-    const width = Number(parameters.width) || 200;
-    const height = Number(parameters.height) || 150;
-    const cornerRadius = Number(parameters.cornerRadius) || 0;
-    const r = Math.min(cornerRadius, width / 2, height / 2);
-
-    const shape = new THREE.Shape();
-
-    if (r === 0) {
-      shape.moveTo(0, 0);
-      shape.lineTo(width, 0);
-      shape.lineTo(width, height);
-      shape.lineTo(0, height);
-      shape.lineTo(0, 0);
-    } else {
-      shape.moveTo(r, 0);
-      shape.lineTo(width - r, 0);
-      shape.quadraticCurveTo(width, 0, width, r);
-      shape.lineTo(width, height - r);
-      shape.quadraticCurveTo(width, height, width - r, height);
-      shape.lineTo(r, height);
-      shape.quadraticCurveTo(0, height, 0, height - r);
-      shape.lineTo(0, r);
-      shape.quadraticCurveTo(0, 0, r, 0);
-    }
+    // Create shape from parameters (more reliable than parsing SVG)
+    let shape = createShapeFromParams(parameters);
 
     // Add holes if parameters specify
     const holeDiameter = Number(parameters.holeDiameter) || 0;
-    const holeInset = Number(parameters.holeInset) || Math.max(cornerRadius, (holeDiameter / 2) * 3);
+    const width = Number(parameters.width) || Number(parameters.diameter) || Number(parameters.outerDiameter) || 200;
+    const height = Number(parameters.height) || width;
+    const cornerRadius = Number(parameters.cornerRadius) || 0;
+    const holeInset = Number(parameters.holeInset) || Math.max(cornerRadius + 10, (holeDiameter / 2) * 3);
 
-    if (holeDiameter > 0) {
+    if (holeDiameter > 0 && parameters.width && parameters.height) {
       const holeRadius = holeDiameter / 2;
       const holes = [
         { x: holeInset, y: holeInset },
@@ -120,7 +275,7 @@ const Shape3D: React.FC<{
     };
 
     return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  }, [parameters, thickness]);
+  }, [svgPath, parameters, thickness]);
 
   const edges = useMemo(() => new THREE.EdgesGeometry(geometry, 15), [geometry]);
 
@@ -141,11 +296,51 @@ const AutoFrameCamera: React.FC<{ parameters: Record<string, any> }> = ({ parame
   const { camera, size } = useThree();
 
   React.useEffect(() => {
-    const width = Number(parameters.width) || 200;
-    const height = Number(parameters.height) || 150;
-    const thickness = Number(parameters.thickness) || 4;
+    // Calculate dimensions based on shape type
+    let shapeWidth: number;
+    let shapeHeight: number;
+    let centerX: number;
+    let centerY: number;
 
-    const maxDimension = Math.max(width, height);
+    if (parameters.diameter !== undefined) {
+      // Circle
+      const d = Number(parameters.diameter);
+      shapeWidth = d;
+      shapeHeight = d;
+      centerX = d / 2;
+      centerY = d / 2;
+    } else if (parameters.outerDiameter !== undefined) {
+      // Ring
+      const d = Number(parameters.outerDiameter);
+      shapeWidth = d;
+      shapeHeight = d;
+      centerX = d / 2;
+      centerY = d / 2;
+    } else if (parameters.base !== undefined && parameters.width === undefined) {
+      // Triangle
+      const base = Number(parameters.base);
+      const h = Number(parameters.height) || base;
+      shapeWidth = base;
+      shapeHeight = h;
+      centerX = base / 2;
+      centerY = h / 2;
+    } else if (parameters.size !== undefined && parameters.width === undefined) {
+      // Hexagon
+      const s = Number(parameters.size);
+      shapeWidth = s;
+      shapeHeight = s;
+      centerX = s / 2;
+      centerY = s / 2;
+    } else {
+      // Rectangle and other shapes
+      shapeWidth = Number(parameters.width) || 200;
+      shapeHeight = Number(parameters.height) || 150;
+      centerX = shapeWidth / 2;
+      centerY = shapeHeight / 2;
+    }
+
+    const thickness = Number(parameters.thickness) || 4;
+    const maxDimension = Math.max(shapeWidth, shapeHeight);
     const aspect = size.width / size.height;
     const frustumSize = maxDimension * 2;
 
@@ -155,7 +350,7 @@ const AutoFrameCamera: React.FC<{ parameters: Record<string, any> }> = ({ parame
       camera.top = frustumSize / 2;
       camera.bottom = -frustumSize / 2;
       camera.position.set(0, 0, 1000);
-      camera.lookAt(width / 2, height / 2, thickness / 2);
+      camera.lookAt(centerX, centerY, thickness / 2);
       camera.updateProjectionMatrix();
     }
   }, [parameters, camera, size]);
@@ -176,6 +371,30 @@ const StudioLighting: React.FC = () => (
   </>
 );
 
+// Helper to get shape center coordinates
+const getShapeCenter = (parameters: Record<string, any>, thickness: number): [number, number, number] => {
+  if (parameters.diameter !== undefined) {
+    const d = Number(parameters.diameter);
+    return [d / 2, d / 2, thickness / 2];
+  }
+  if (parameters.outerDiameter !== undefined) {
+    const d = Number(parameters.outerDiameter);
+    return [d / 2, d / 2, thickness / 2];
+  }
+  if (parameters.base !== undefined && parameters.width === undefined) {
+    const base = Number(parameters.base);
+    const h = Number(parameters.height) || base;
+    return [base / 2, h / 2, thickness / 2];
+  }
+  if (parameters.size !== undefined && parameters.width === undefined) {
+    const s = Number(parameters.size);
+    return [s / 2, s / 2, thickness / 2];
+  }
+  const w = Number(parameters.width) || 200;
+  const h = Number(parameters.height) || 150;
+  return [w / 2, h / 2, thickness / 2];
+};
+
 const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
   svgGenerator,
   threejsGenerator,
@@ -185,9 +404,12 @@ const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d');
 
-  // Calculate viewBox dimensions
-  const width = Number(parameters.width) || 200;
-  const height = Number(parameters.height) || 150;
+  // Calculate viewBox dimensions - handle different shape types
+  const width = Number(parameters.width) || Number(parameters.diameter) || Number(parameters.outerDiameter) || Number(parameters.base) || Number(parameters.size) || 200;
+  const height = Number(parameters.height) || Number(parameters.diameter) || Number(parameters.outerDiameter) || width;
+
+  // Calculate center for 3D view
+  const shapeCenter = useMemo(() => getShapeCenter(parameters, thickness), [parameters, thickness]);
   const padding = Math.max(width, height) * 0.2;
   const leftPadding = Math.max(padding, 80);
   const topPadding = Math.max(padding, 50);
@@ -314,6 +536,7 @@ const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
           <StudioLighting />
           <AutoFrameCamera parameters={{ ...parameters, thickness }} />
           <Shape3D
+            svgPath={svgPath}
             parameters={parameters}
             color={materialColor}
             thickness={thickness}
@@ -325,7 +548,7 @@ const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
             rotateSpeed={0.6}
             enableZoom={false}
             enablePan={false}
-            target={[width / 2, height / 2, thickness / 2]}
+            target={shapeCenter}
           />
         </Canvas>
       )}

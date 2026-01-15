@@ -29,7 +29,7 @@ const AppContent: React.FC = () => {
   // Template Modal State
   const [isTemplateModalOpen, setTemplateModalOpen] = useState(false);
 
-  // Effect to handle role-based redirection
+  // Effect to handle role-based redirection and reset state on logout
   useEffect(() => {
     if (user?.role === 'admin') {
       setMode('admin');
@@ -37,6 +37,14 @@ const AppContent: React.FC = () => {
       setMode('landing');
     }
   }, [user, mode]);
+
+  // Reset wizard state when user logs out
+  useEffect(() => {
+    if (!user && mode === 'wizard') {
+      resetWizardState();
+      setMode('landing');
+    }
+  }, [user]);
 
   // Data State (Fetched from API)
   const [materials, setMaterials] = useState<MaterialDef[]>([]);
@@ -106,6 +114,24 @@ const AppContent: React.FC = () => {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
   const goToStep = (step: number) => setCurrentStep(Math.max(1, Math.min(step, totalSteps)));
 
+  // Reset wizard state to initial values
+  const resetWizardState = () => {
+    setSelectedShape(null);
+    setShapeParams({});
+    setDimensions({
+      width: 200,
+      height: 150,
+      thickness: 4,
+      cornerRadius: 15,
+      holeDiameter: 10,
+    });
+    setMaterialId('mild_steel');
+    setServiceId('laser_cut');
+    setFinishingId('none');
+    setQuantity(1);
+    setCurrentStep(1);
+  };
+
   // Real-time pricing calculation
   const quote = useMemo(() => {
     if (materials.length === 0) return null;
@@ -156,6 +182,9 @@ const AppContent: React.FC = () => {
 
   const handleOrder = () => {
     alert(`Order Confirmed! \nReference: KSA-${Math.floor(Math.random() * 10000)}\nTotal: SAR ${quote?.total.toFixed(2)}`);
+    // Reset state after order confirmation
+    resetWizardState();
+    setMode('landing');
   };
 
   const handleStartQuote = () => {
@@ -219,7 +248,7 @@ const AppContent: React.FC = () => {
       {/* App Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setMode('landing')}>
+           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { resetWizardState(); setMode('landing'); }}>
                 <div className="bg-blue-600 text-white p-1 rounded-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
                 </div>
@@ -232,7 +261,7 @@ const AppContent: React.FC = () => {
                    Draft by {user.name}
                  </span>
                )}
-               <button onClick={() => setMode('landing')} className="text-sm font-medium text-slate-400 hover:text-red-500">
+               <button onClick={() => { resetWizardState(); setMode('landing'); }} className="text-sm font-medium text-slate-400 hover:text-red-500">
                    Exit
                </button>
            </div>

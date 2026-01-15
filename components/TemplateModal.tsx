@@ -80,9 +80,18 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, onSelect
     }
   };
 
-  const handleSelect = (shape: Shape) => {
-    onSelect(shape);
-    onClose();
+  const handleSelect = async (shape: Shape) => {
+    try {
+      // Fetch full shape with parameters
+      const fullShape = await apiClient.shapes.getById(shape.id);
+      onSelect(fullShape);
+      onClose();
+    } catch (err) {
+      console.error('Failed to fetch shape details:', err);
+      // Fallback to basic shape if fetch fails
+      onSelect(shape);
+      onClose();
+    }
   };
 
   return (

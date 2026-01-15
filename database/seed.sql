@@ -45,6 +45,17 @@ INSERT INTO finishing_options (finish_name, finish_type, description, cost_multi
 
 -- Sample Shapes (Similar to SendCutSend templates)
 
+-- Standard Mounting Plate (Original Default Template - Benchmark)
+INSERT INTO shapes (name, slug, description, category, is_active, svg_path_generator, cost_formula, display_order) VALUES
+('Standard Mounting Plate', 'standard-mounting-plate', 'Rectangular plate with rounded corners and 4 mounting holes at each corner. The original benchmark template.', 'Rectangles', true,
+'const w = params.width || 200;
+const h = params.height || 150;
+const r = Math.min(params.cornerRadius || 15, w/2, h/2);
+if (r === 0) return `M 0,0 H ${w} V ${h} H 0 Z`;
+return `M ${r},0 H ${w-r} A ${r},${r} 0 0 1 ${w},${r} V ${h-r} A ${r},${r} 0 0 1 ${w-r},${h} H ${r} A ${r},${r} 0 0 1 0,${h-r} V ${r} A ${r},${r} 0 0 1 ${r},0 Z`;',
+'area * material_cost + perimeter * cut_cost',
+0);
+
 -- Rectangle with Corner Radius
 INSERT INTO shapes (name, slug, description, category, is_active, svg_path_generator, cost_formula, display_order) VALUES
 ('Rectangle', 'rectangle', 'Standard rectangle with optional corner radius and mounting holes', 'Rectangles', true,
@@ -120,6 +131,19 @@ for (let i = 0; i < 6; i++) {
 return `M ${points.join(" L ")} Z`;',
 '(3 * Math.sqrt(3) / 2 * (size/2)^2) * material_cost + (6 * size) * cut_cost',
 7);
+
+-- Standard Mounting Plate Parameters (Benchmark template)
+INSERT INTO shape_parameters (shape_id, parameter_name, parameter_type, label, default_value, min_value, max_value, step_value, unit, is_required, display_order)
+SELECT id, 'width', 'number', 'Width', 200, 50, 2000, 1, 'mm', true, 1 FROM shapes WHERE slug = 'standard-mounting-plate';
+
+INSERT INTO shape_parameters (shape_id, parameter_name, parameter_type, label, default_value, min_value, max_value, step_value, unit, is_required, display_order)
+SELECT id, 'height', 'number', 'Height', 150, 50, 2000, 1, 'mm', true, 2 FROM shapes WHERE slug = 'standard-mounting-plate';
+
+INSERT INTO shape_parameters (shape_id, parameter_name, parameter_type, label, default_value, min_value, max_value, step_value, unit, is_required, help_text, display_order)
+SELECT id, 'cornerRadius', 'range', 'Corner Radius', 15, 0, 100, 1, 'mm', false, 'Rounded corners reduce stress concentration', 3 FROM shapes WHERE slug = 'standard-mounting-plate';
+
+INSERT INTO shape_parameters (shape_id, parameter_name, parameter_type, label, default_value, min_value, max_value, step_value, unit, is_required, help_text, display_order)
+SELECT id, 'holeDiameter', 'number', 'Hole Diameter', 10, 0, 50, 0.5, 'mm', false, '4 mounting holes at each corner. Set to 0 for no holes.', 4 FROM shapes WHERE slug = 'standard-mounting-plate';
 
 -- Rectangle Parameters
 INSERT INTO shape_parameters (shape_id, parameter_name, parameter_type, label, default_value, min_value, max_value, step_value, unit, is_required, display_order)
