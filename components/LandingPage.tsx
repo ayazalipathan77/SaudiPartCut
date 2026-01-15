@@ -5,9 +5,10 @@ interface LandingPageProps {
   onStart: () => void;
   onLoginClick: () => void;
   onSignupClick: () => void;
+  onAdminClick?: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSignupClick }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSignupClick, onAdminClick }) => {
   const { user, logout } = useAuth();
 
   return (
@@ -142,7 +143,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSign
             <div className="flex gap-6 text-sm">
                 <a href="#" className="hover:text-white">Privacy Policy</a>
                 <a href="#" className="hover:text-white">Terms of Service</a>
-                <button onClick={onLoginClick} className="hover:text-white text-slate-600 flex items-center gap-1">
+                <button onClick={onAdminClick || onLoginClick} className="hover:text-white text-slate-600 flex items-center gap-1">
                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                    Admin Access
                 </button>

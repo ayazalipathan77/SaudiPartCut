@@ -1,16 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import WizardNav from './components/WizardNav';
 import { StepTemplate, StepMaterial, StepService } from './components/WizardSteps';
-import DesignConfigurator from './components/DesignConfigurator';
-import PersistentPreview from './components/PersistentPreview';
+import TemplateModal from './components/TemplateModal';
+import DynamicConfigForm from './components/DynamicConfigForm';
+import DynamicShapePreview from './components/DynamicShapePreview';
 import OrderSummary, { MiniQuoteTicker } from './components/OrderSummary';
 import LandingPage from './components/LandingPage';
-import AdminDashboard from './components/AdminDashboard';
+import AdminApp from './components/admin/AdminApp';
 import AuthModal from './components/AuthModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
 import { calculateQuote } from './utils/pricing';
 import { api } from './services/api';
+import { Shape } from './services/apiClient';
 
 type AppMode = 'landing' | 'wizard' | 'admin';
 
@@ -23,6 +25,9 @@ const AppContent: React.FC = () => {
   // Auth Modal State
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+
+  // Template Modal State
+  const [isTemplateModalOpen, setTemplateModalOpen] = useState(false);
 
   // Effect to handle role-based redirection
   useEffect(() => {
@@ -62,7 +67,11 @@ const AppContent: React.FC = () => {
     fetchData();
   }, []);
 
-  // State for Part Configuration
+  // Selected Shape from Dynamic Templates
+  const [selectedShape, setSelectedShape] = useState<Shape | null>(null);
+  const [shapeParams, setShapeParams] = useState<Record<string, number | string | boolean>>({});
+
+  // State for Part Configuration (derived from shape params or defaults)
   const [dimensions, setDimensions] = useState<PartDimensions>({
     width: 200,
     height: 150,
@@ -70,6 +79,20 @@ const AppContent: React.FC = () => {
     cornerRadius: 15,
     holeDiameter: 10,
   });
+
+  // Sync dimensions from shape params
+  useEffect(() => {
+    if (Object.keys(shapeParams).length > 0) {
+      setDimensions(prev => ({
+        ...prev,
+        width: Number(shapeParams.width) || prev.width,
+        height: Number(shapeParams.height) || prev.height,
+        thickness: Number(shapeParams.thickness) || prev.thickness,
+        cornerRadius: Number(shapeParams.cornerRadius) || 0,
+        holeDiameter: Number(shapeParams.holeDiameter) || 0,
+      }));
+    }
+  }, [shapeParams]);
 
   const [materialId, setMaterialId] = useState<MaterialType>('mild_steel');
   const [serviceId, setServiceId] = useState<ServiceType>('laser_cut');
@@ -101,13 +124,34 @@ const AppContent: React.FC = () => {
   
   const getMaterialColor = (id: MaterialType) => {
     switch (id) {
-      case 'mild_steel': return '#94a3b8'; 
-      case 'stainless_304': return '#e2e8f0'; 
-      case 'stainless_316': return '#f1f5f9'; 
-      case 'aluminum': return '#cbd5e1'; 
-      case 'brass': return '#fcd34d'; 
+      case 'mild_steel': return '#94a3b8';
+      case 'stainless_304': return '#e2e8f0';
+      case 'stainless_316': return '#f1f5f9';
+      case 'aluminum': return '#cbd5e1';
+      case 'brass': return '#fcd34d';
       default: return '#cbd5e1';
     }
+  };
+
+  // Handle shape selection from dynamic templates
+  const handleShapeSelect = (shape: Shape) => {
+    setSelectedShape(shape);
+    // Initialize parameters with default values
+    const initialParams: Record<string, number | string | boolean> = {};
+    if (shape.parameters) {
+      shape.parameters.forEach(param => {
+        initialParams[param.parameter_name] = param.default_value ??
+          (param.parameter_type === 'number' || param.parameter_type === 'range' ? 0 :
+           param.parameter_type === 'boolean' ? false : '');
+      });
+    }
+    setShapeParams(initialParams);
+    nextStep();
+  };
+
+  // Handle parameter change
+  const handleParamChange = (name: string, value: number | string | boolean) => {
+    setShapeParams(prev => ({ ...prev, [name]: value }));
   };
 
   const handleOrder = () => {
@@ -144,35 +188,25 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Admin View - Strictly protected
+  // Admin View - Now uses the new AdminApp with backend integration
   if (mode === 'admin') {
-     if (user?.role !== 'admin') {
-         return <div className="p-10 text-center">Unauthorized Access</div>;
-     }
-     return (
-          <AdminDashboard 
-            materials={materials} setMaterials={setMaterials}
-            services={services} setServices={setServices}
-            finishes={finishes} setFinishes={setFinishes}
-            vatRate={vatRate} setVatRate={setVatRate}
-            onExit={() => logout()}
-          />
-      );
+     return <AdminApp />;
   }
 
   // Landing View
   if (mode === 'landing') {
       return (
         <>
-          <LandingPage 
-            onStart={handleStartQuote} 
+          <LandingPage
+            onStart={handleStartQuote}
             onLoginClick={openLogin}
             onSignupClick={openSignup}
+            onAdminClick={() => setMode('admin')}
           />
-          <AuthModal 
-            isOpen={isAuthModalOpen} 
-            onClose={() => setAuthModalOpen(false)} 
-            initialView={authView} 
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            initialView={authView}
           />
         </>
       );
@@ -212,27 +246,38 @@ const AppContent: React.FC = () => {
       <main className="flex-grow max-w-7xl mx-auto px-4 w-full pb-32">
         <div className="w-full">
             {currentStep === 1 && (
-                <StepTemplate onSelect={nextStep} />
+                <StepTemplate onSelect={() => setTemplateModalOpen(true)} />
             )}
-            
+
             {/* Split Grid for Steps 2, 3, 4 */}
             {(currentStep >= 2 && currentStep <= 4) && (
               <div className="flex flex-col lg:flex-row gap-8">
-                  {/* Left Column: Persistent Preview */}
-                  <div className="lg:w-1/3 order-1 lg:order-1">
-                      <PersistentPreview 
-                        dimensions={dimensions} 
-                        materialId={materialId} 
-                        previewColor={getMaterialColor(materialId)} 
-                      />
+                  {/* Left Column: Dynamic Shape Preview */}
+                  <div className="lg:w-1/2 order-1 lg:order-1">
+                      {selectedShape && (
+                        <div className="sticky top-4">
+                          <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-slate-900">{selectedShape.name}</h3>
+                            <p className="text-sm text-slate-500">{selectedShape.description}</p>
+                          </div>
+                          <DynamicShapePreview
+                            svgGenerator={selectedShape.svg_path_generator || undefined}
+                            threejsGenerator={selectedShape.threejs_shape_generator || undefined}
+                            parameters={shapeParams}
+                            materialColor={getMaterialColor(materialId)}
+                            thickness={dimensions.thickness}
+                          />
+                        </div>
+                      )}
                   </div>
 
                   {/* Right Column: Dynamic Content */}
-                  <div className="lg:w-2/3 order-2 lg:order-2">
-                     {currentStep === 2 && (
-                        <DesignConfigurator 
-                            dimensions={dimensions} 
-                            setDimensions={setDimensions} 
+                  <div className="lg:w-1/2 order-2 lg:order-2">
+                     {currentStep === 2 && selectedShape && (
+                        <DynamicConfigForm
+                          parameters={selectedShape.parameters || []}
+                          values={shapeParams}
+                          onChange={handleParamChange}
                         />
                      )}
 
@@ -250,7 +295,7 @@ const AppContent: React.FC = () => {
                      )}
 
                      {currentStep === 4 && (
-                        <StepService 
+                        <StepService
                             services={services}
                             finishes={finishes}
                             selectedService={serviceId}
@@ -264,9 +309,9 @@ const AppContent: React.FC = () => {
             )}
 
             {currentStep === 5 && quote && (
-                <OrderSummary 
-                    quote={quote} 
-                    onOrder={handleOrder} 
+                <OrderSummary
+                    quote={quote}
+                    onOrder={handleOrder}
                     onBack={prevStep}
                     specSummary={getSummaryNames()}
                 />
@@ -287,11 +332,18 @@ const AppContent: React.FC = () => {
       )}
       
       {/* Auth Modal (if triggered during flow) */}
-       <AuthModal 
-            isOpen={isAuthModalOpen} 
-            onClose={() => setAuthModalOpen(false)} 
-            initialView={authView} 
+       <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            initialView={authView}
        />
+
+      {/* Template Selection Modal */}
+      <TemplateModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelect={handleShapeSelect}
+      />
 
     </div>
   );
