@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, OrthographicCamera } from '@react-three/drei';
+import { OrbitControls, OrthographicCamera, GizmoHelper, GizmoViewcube } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface DynamicShapePreviewProps {
@@ -437,7 +437,7 @@ const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
   const holeRadius = holeDiameter / 2;
 
   return (
-    <div className="relative bg-slate-50 border border-slate-200 rounded-lg overflow-hidden h-[500px]">
+    <div className="relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       {/* View Mode Toggle */}
       <div className="absolute top-4 left-4 z-10 flex bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         <button
@@ -462,105 +462,136 @@ const DynamicShapePreview: React.FC<DynamicShapePreviewProps> = ({
         </button>
       </div>
 
-      {/* Dimensions Label */}
-      <div className="absolute bottom-4 right-4 z-10 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
-        <p className="text-slate-600 text-xs font-mono">
-          {width} × {height} × {thickness} mm
-        </p>
+      {/* Dimension Info - Bottom Right */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <div className="bg-white/95 backdrop-blur rounded-lg shadow-md border border-slate-200 px-3 py-2">
+          <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              <span className="text-slate-500">W:</span>
+              <span className="font-semibold text-slate-700">{width}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              <span className="text-slate-500">H:</span>
+              <span className="font-semibold text-slate-700">{height}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+              <span className="text-slate-500">T:</span>
+              <span className="font-semibold text-slate-700">{thickness}</span>
+            </div>
+            <span className="text-slate-400">mm</span>
+          </div>
+        </div>
       </div>
 
-      {viewMode === '2d' ? (
-        /* 2D SVG Preview */
-        <div className="w-full h-full flex items-center justify-center">
-          <svg
-            width="100%"
-            height="100%"
-            viewBox={`${-leftPadding} ${-topPadding} ${viewBoxWidth} ${viewBoxHeight}`}
-            className="max-w-full max-h-full"
-          >
-            {/* Grid Background */}
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
-              </pattern>
-              <mask id="holes-mask">
-                <rect x={-padding} y={-padding} width={viewBoxWidth} height={viewBoxHeight} fill="white" />
-                {holes.map((h, i) => (
-                  <circle key={i} cx={h.x} cy={h.y} r={holeRadius} fill="black" />
-                ))}
-              </mask>
-            </defs>
+      {/* Preview Area */}
+      <div className="h-[450px] bg-gradient-to-br from-slate-50 to-slate-100">
 
-            <rect x={-leftPadding} y={-topPadding} width={viewBoxWidth} height={viewBoxHeight} fill="url(#grid)" />
+        {viewMode === '2d' ? (
+          /* 2D SVG Preview */
+          <div className="w-full h-full flex items-center justify-center">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox={`${-leftPadding} ${-topPadding} ${viewBoxWidth} ${viewBoxHeight}`}
+              className="max-w-full max-h-full"
+            >
+              {/* Grid Background */}
+              <defs>
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
+                </pattern>
+                <mask id="holes-mask">
+                  <rect x={-padding} y={-padding} width={viewBoxWidth} height={viewBoxHeight} fill="white" />
+                  {holes.map((h, i) => (
+                    <circle key={i} cx={h.x} cy={h.y} r={holeRadius} fill="black" />
+                  ))}
+                </mask>
+              </defs>
 
-            {/* Dimension Lines */}
-            <g stroke="#94a3b8" strokeWidth="1" fill="none">
-              {/* Width */}
-              <line x1="0" y1="-15" x2={width} y2="-15" />
-              <line x1="0" y1="-20" x2="0" y2="-10" />
-              <line x1={width} y1="-20" x2={width} y2="-10" />
-              {/* Height */}
-              <line x1="-15" y1="0" x2="-15" y2={height} />
-              <line x1="-20" y1="0" x2="-10" y2="0" />
-              <line x1="-20" y1={height} x2="-10" y2={height} />
-            </g>
-            <text x={width / 2} y="-25" textAnchor="middle" fill="#64748b" fontSize="12" fontFamily="monospace">
-              {width} mm
-            </text>
-            <text x="-25" y={height / 2} textAnchor="end" dominantBaseline="middle" fill="#64748b" fontSize="12" fontFamily="monospace">
-              {height} mm
-            </text>
+              <rect x={-leftPadding} y={-topPadding} width={viewBoxWidth} height={viewBoxHeight} fill="url(#grid)" />
 
-            {/* Shape */}
-            <path
-              d={svgPath}
-              fill={materialColor}
-              stroke="#334155"
-              strokeWidth="1.5"
-              mask={holes.length > 0 ? "url(#holes-mask)" : undefined}
-            />
-
-            {/* Hole crosshairs */}
-            {holes.map((h, i) => (
-              <g key={`crosshair-${i}`} opacity="0.3">
-                <line x1={h.x - holeRadius - 5} y1={h.y} x2={h.x + holeRadius + 5} y2={h.y} stroke="red" strokeWidth="0.5" strokeDasharray="2,1" />
-                <line x1={h.x} y1={h.y - holeRadius - 5} x2={h.x} y2={h.y + holeRadius + 5} stroke="red" strokeWidth="0.5" strokeDasharray="2,1" />
+              {/* Dimension Lines */}
+              <g stroke="#94a3b8" strokeWidth="1" fill="none">
+                {/* Width */}
+                <line x1="0" y1="-15" x2={width} y2="-15" />
+                <line x1="0" y1="-20" x2="0" y2="-10" />
+                <line x1={width} y1="-20" x2={width} y2="-10" />
+                {/* Height */}
+                <line x1="-15" y1="0" x2="-15" y2={height} />
+                <line x1="-20" y1="0" x2="-10" y2="0" />
+                <line x1="-20" y1={height} x2="-10" y2={height} />
               </g>
-            ))}
-          </svg>
-        </div>
-      ) : (
-        /* 3D Three.js Preview */
-        <Canvas>
-          <OrthographicCamera makeDefault position={[0, 0, 1000]} zoom={1} />
-          <StudioLighting />
-          <AutoFrameCamera parameters={{ ...parameters, thickness }} />
-          <Shape3D
-            svgPath={svgPath}
-            parameters={parameters}
-            color={materialColor}
-            thickness={thickness}
-          />
-          <OrbitControls
-            makeDefault
-            enableDamping
-            dampingFactor={0.08}
-            rotateSpeed={0.6}
-            enableZoom={false}
-            enablePan={false}
-            target={shapeCenter}
-          />
-        </Canvas>
-      )}
+              <text x={width / 2} y="-25" textAnchor="middle" fill="#64748b" fontSize="12" fontFamily="monospace">
+                {width} mm
+              </text>
+              <text x="-25" y={height / 2} textAnchor="end" dominantBaseline="middle" fill="#64748b" fontSize="12" fontFamily="monospace">
+                {height} mm
+              </text>
 
-      {/* 3D Controls Hint */}
-      {viewMode === '3d' && (
-        <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
-          <p className="text-slate-600 text-xs font-medium">
-            Drag to Rotate
-          </p>
-        </div>
-      )}
+              {/* Shape */}
+              <path
+                d={svgPath}
+                fill={materialColor}
+                stroke="#334155"
+                strokeWidth="1.5"
+                mask={holes.length > 0 ? "url(#holes-mask)" : undefined}
+              />
+
+              {/* Hole crosshairs */}
+              {holes.map((h, i) => (
+                <g key={`crosshair-${i}`} opacity="0.3">
+                  <line x1={h.x - holeRadius - 5} y1={h.y} x2={h.x + holeRadius + 5} y2={h.y} stroke="red" strokeWidth="0.5" strokeDasharray="2,1" />
+                  <line x1={h.x} y1={h.y - holeRadius - 5} x2={h.x} y2={h.y + holeRadius + 5} stroke="red" strokeWidth="0.5" strokeDasharray="2,1" />
+                </g>
+              ))}
+            </svg>
+          </div>
+        ) : (
+          /* 3D Three.js Preview */
+          <Canvas>
+            <OrthographicCamera makeDefault position={[0, 0, 1000]} zoom={1} />
+            <StudioLighting />
+            <AutoFrameCamera parameters={{ ...parameters, thickness }} />
+            <Shape3D
+              svgPath={svgPath}
+              parameters={parameters}
+              color={materialColor}
+              thickness={thickness}
+            />
+            {/* ViewCube - CAD-style orientation indicator */}
+            <GizmoHelper alignment="top-right" margin={[80, 80]}>
+              <GizmoViewcube
+                color="#f8fafc"
+                textColor="#334155"
+                strokeColor="#94a3b8"
+                hoverColor="#3b82f6"
+                faces={['Front', 'Back', 'Top', 'Bottom', 'Right', 'Left']}
+              />
+            </GizmoHelper>
+            <OrbitControls
+              makeDefault
+              enableDamping
+              dampingFactor={0.08}
+              rotateSpeed={0.6}
+              enableZoom={true}
+              enablePan={false}
+              target={shapeCenter}
+            />
+          </Canvas>
+        )}
+
+        {/* 3D Controls Hint */}
+        {viewMode === '3d' && (
+          <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1.5 rounded-md shadow-sm border border-slate-200">
+            <p className="text-slate-600 text-xs font-medium">
+              Drag to Rotate
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
