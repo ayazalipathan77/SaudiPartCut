@@ -11,8 +11,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
   const [view, setView] = useState<'login' | 'signup'>(initialView);
   const { login, signup, continueAsGuest } = useAuth();
   
-  const [email, setEmail] = useState('admin@saudipart.com');
-  const [password, setPassword] = useState('admin');
+  const [email, setEmail] = useState('admin@ksapartcut.com');
+  const [password, setPassword] = useState('admin123');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,7 +35,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
       if (success) {
         onClose();
       } else {
-        setError('Invalid credentials. Default: admin@saudipart.com / admin');
+        setError('Invalid credentials. Admin: admin@ksapartcut.com / admin123');
       }
     } catch (err) {
       setError('An error occurred');
@@ -151,7 +151,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
           {view === 'login' && (
             <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200">
                <strong>Demo Access:</strong><br/>
-               Admin: admin@saudipart.com / admin<br/>
+               Admin: admin@ksapartcut.com / admin123<br/>
                User: Any email / Any password
             </div>
           )}

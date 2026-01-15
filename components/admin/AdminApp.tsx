@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient, AdminUser, Shape } from '../../services/apiClient';
-import AdminLogin from './AdminLogin';
+import React, { useState } from 'react';
+import { apiClient, Shape } from '../../services/apiClient';
+import { useAuth } from '../../context/AuthContext';
 import AdminLayout from './AdminLayout';
 import ShapeList from './ShapeList';
 import ShapeForm from './ShapeForm';
@@ -9,36 +9,16 @@ type AdminTab = 'shapes' | 'materials' | 'thickness' | 'services' | 'finishing' 
 type ShapeView = 'list' | 'create' | 'edit';
 
 const AdminApp: React.FC = () => {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use shared auth context instead of separate admin auth
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('shapes');
 
   // Shape management state
   const [shapeView, setShapeView] = useState<ShapeView>('list');
   const [editingShape, setEditingShape] = useState<Shape | null>(null);
 
-  // Check authentication on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (apiClient.auth.isAuthenticated()) {
-        const verifiedUser = await apiClient.auth.verify();
-        if (verifiedUser) {
-          setUser(verifiedUser);
-        }
-      }
-      setIsLoading(false);
-    };
-    checkAuth();
-  }, []);
-
-  const handleLoginSuccess = async () => {
-    const verifiedUser = await apiClient.auth.verify();
-    setUser(verifiedUser);
-  };
-
   const handleLogout = () => {
-    apiClient.auth.logout();
-    setUser(null);
+    logout();
   };
 
   const handleCreateShape = () => {
@@ -67,25 +47,8 @@ const AdminApp: React.FC = () => {
     setEditingShape(null);
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in - show login page
-  if (!user) {
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // Check if user has admin privileges
-  if (user.role !== 'admin' && user.role !== 'manager') {
+  // Check if user has admin privileges (user should already be set from AuthContext)
+  if (!user || (user.role !== 'admin')) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="bg-white rounded-xl p-8 max-w-md text-center shadow-lg">

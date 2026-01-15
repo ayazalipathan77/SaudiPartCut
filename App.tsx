@@ -29,19 +29,17 @@ const AppContent: React.FC = () => {
   // Template Modal State
   const [isTemplateModalOpen, setTemplateModalOpen] = useState(false);
 
-  // Effect to handle role-based redirection and reset state on logout
+  // Effect to handle role-based redirection on user change
   useEffect(() => {
     if (user?.role === 'admin') {
+      // Admin user logged in - redirect to admin portal and close modal
       setMode('admin');
-    } else if (user && mode === 'admin') {
-      setMode('landing');
-    }
-  }, [user, mode]);
-
-  // Reset wizard state when user logs out
-  useEffect(() => {
-    if (!user && mode === 'wizard') {
-      resetWizardState();
+      setAuthModalOpen(false);
+    } else if (!user) {
+      // User logged out - reset to landing
+      if (mode === 'wizard') {
+        resetWizardState();
+      }
       setMode('landing');
     }
   }, [user]);

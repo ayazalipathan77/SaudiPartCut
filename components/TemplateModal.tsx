@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, Shape } from '../services/apiClient';
+import ShapeThumbnail from './ShapeThumbnail';
 
 interface TemplateModalProps {
   isOpen: boolean;
@@ -178,21 +179,17 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, onSelect
                     onClick={() => handleSelect(shape)}
                     className="group relative bg-white rounded-xl border-2 border-slate-200 hover:border-blue-500 overflow-hidden cursor-pointer transition-all hover:shadow-lg"
                   >
-                    {/* Preview Area */}
-                    <div className={`h-28 flex items-center justify-center transition-colors ${getCategoryColor(shape.category)}`}>
-                      {shape.preview_image_url ? (
-                        <img
-                          src={shape.preview_image_url}
-                          alt={shape.name}
-                          className="max-h-20 max-w-full object-contain"
-                        />
-                      ) : (
-                        getCategoryIcon(shape.category)
-                      )}
+                    {/* Preview Area - Shape Thumbnail */}
+                    <div className="h-32 bg-slate-50 flex items-center justify-center p-3">
+                      <ShapeThumbnail
+                        svgGenerator={shape.svg_path_generator}
+                        className="w-full h-full"
+                        fillColor="#94a3b8"
+                      />
                     </div>
 
                     {/* Info */}
-                    <div className="p-3">
+                    <div className="p-3 border-t border-slate-100">
                       <h3 className="font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                         {shape.name}
                       </h3>

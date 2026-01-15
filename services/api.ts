@@ -92,12 +92,12 @@ export const api = {
   // Auth (Simulating User Table check)
   login: async (email: string, password: string): Promise<User | null> => {
     await delay(500);
-    
-    // Simulate DB query against the seed data logic
-    if (email === 'admin@saudipart.com' && password === 'admin') {
-      return { id: 'uuid-admin', name: 'System Admin', email, role: 'admin' };
+
+    // Simulate DB query against the seed data logic - matches database/seed.sql
+    if (email === 'admin@ksapartcut.com' && password === 'admin123') {
+      return { id: 'uuid-admin', name: 'Admin User', email, role: 'admin' };
     }
-    
+
     // Allow any other user for demo purposes, but in real DB we would check 'users' table
     if (email && password) {
       return { id: `uuid-${Date.now()}`, name: email.split('@')[0], email, role: 'customer' };

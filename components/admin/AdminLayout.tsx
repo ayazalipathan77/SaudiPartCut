@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { apiClient, AdminUser } from '../../services/apiClient';
+import { User } from '../../context/AuthContext';
 
 type AdminTab = 'shapes' | 'materials' | 'thickness' | 'services' | 'finishing' | 'mappings' | 'settings';
 
 interface AdminLayoutProps {
-  user: AdminUser;
+  user: User;
   onLogout: () => void;
   children: React.ReactNode;
   activeTab: AdminTab;
@@ -111,11 +111,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ user, onLogout, children, act
         <div className="p-4 border-t border-slate-700">
           <div className={`flex items-center gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}>
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-              {user.full_name.charAt(0).toUpperCase()}
+              {user.name.charAt(0).toUpperCase()}
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.full_name}</p>
+                <p className="text-sm font-medium truncate">{user.name}</p>
                 <p className="text-xs text-slate-400 truncate">{user.email}</p>
               </div>
             )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient, Shape } from '../../services/apiClient';
+import ShapeThumbnail from '../ShapeThumbnail';
 
 interface ShapeListProps {
   onCreateNew: () => void;
@@ -139,17 +140,13 @@ const ShapeList: React.FC<ShapeListProps> = ({ onCreateNew, onEdit }) => {
               key={shape.id}
               className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {/* Preview Area */}
-              <div className="h-40 bg-slate-50 flex items-center justify-center border-b border-slate-100 relative">
-                {shape.preview_image_url ? (
-                  <img src={shape.preview_image_url} alt={shape.name} className="max-h-full max-w-full object-contain" />
-                ) : (
-                  <div className="text-slate-300">
-                    <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                    </svg>
-                  </div>
-                )}
+              {/* Preview Area - Shape Thumbnail */}
+              <div className="h-40 bg-slate-50 flex items-center justify-center border-b border-slate-100 relative p-4">
+                <ShapeThumbnail
+                  svgGenerator={shape.svg_path_generator}
+                  className="w-full h-full"
+                  fillColor="#94a3b8"
+                />
 
                 {/* Status Badge */}
                 <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
