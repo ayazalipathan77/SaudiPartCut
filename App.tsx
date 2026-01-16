@@ -279,22 +279,20 @@ const AppContent: React.FC = () => {
   // Cart View
   if (mode === 'cart') {
     return (
-      <div className="min-h-screen bg-slate-50">
-        {/* Cart Header */}
-        <header className="bg-white border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setMode('landing')}>
-              <div className="bg-blue-600 text-white p-1 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-              </div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">SaudiPart<span className="text-blue-600">Config</span></span>
-            </div>
-          </div>
-        </header>
-        <CartPage
-          onContinueShopping={() => setMode('wizard')}
-          onCheckout={() => setMode('checkout')}
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header
+          onNavigate={handleNavigate}
+          currentPage="cart"
+          onLoginClick={openLogin}
+          onCartClick={() => setMode('cart')}
         />
+        <main className="flex-grow">
+          <CartPage
+            onContinueShopping={() => setMode('wizard')}
+            onCheckout={() => setMode('checkout')}
+          />
+        </main>
+        <Footer onNavigate={handleNavigate} />
       </div>
     );
   }
@@ -302,13 +300,24 @@ const AppContent: React.FC = () => {
   // Checkout View
   if (mode === 'checkout') {
     return (
-      <CheckoutPage
-        onBack={() => setMode('cart')}
-        onComplete={() => {
-          alert('Order placed successfully! You will receive a confirmation email shortly.');
-          setMode('landing');
-        }}
-      />
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header
+          onNavigate={handleNavigate}
+          currentPage="checkout"
+          onLoginClick={openLogin}
+          onCartClick={() => setMode('cart')}
+        />
+        <main className="flex-grow">
+          <CheckoutPage
+            onBack={() => setMode('cart')}
+            onComplete={() => {
+              alert('Order placed successfully! You will receive a confirmation email shortly.');
+              setMode('landing');
+            }}
+          />
+        </main>
+        <Footer onNavigate={handleNavigate} />
+      </div>
     );
   }
 
