@@ -9,51 +9,10 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSignupClick, onAdminClick }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 text-white p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-            </div>
-            <span className="text-2xl font-bold text-slate-900 tracking-tight">KSAPart<span className="text-blue-600">Cut</span></span>
-          </div>
-          
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-blue-600 transition-colors">Capabilities</a>
-            <a href="#materials" className="hover:text-blue-600 transition-colors">Materials</a>
-            
-            {user ? (
-              <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
-                 <div className="flex flex-col text-right">
-                    <span className="text-xs text-slate-400 font-normal">Welcome,</span>
-                    <span className="text-slate-900 font-bold">{user.name}</span>
-                 </div>
-                 {user.role === 'admin' ? (
-                   <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">ADMIN</span>
-                 ) : (
-                   <button onClick={logout} className="text-slate-400 hover:text-red-500">Sign Out</button>
-                 )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
-                 <button onClick={onLoginClick} className="hover:text-blue-600">Log In</button>
-                 <button 
-                   onClick={onSignupClick}
-                   className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors"
-                 >
-                   Sign Up
-                 </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
-
+    <div className="bg-slate-50 flex flex-col font-sans">
       {/* Hero Section */}
       <section className="relative bg-slate-900 overflow-hidden py-24 lg:py-32">
         <div className="absolute inset-0 z-0">
@@ -130,6 +89,115 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onSign
                         <p className="text-slate-500 leading-relaxed">{s.desc}</p>
                     </div>
                 ))}
+            </div>
+        </div>
+      </section>
+
+      {/* Materials Showcase */}
+      <section id="materials" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-slate-900">50+ Materials In Stock</h2>
+                <p className="text-slate-500 mt-4 max-w-2xl mx-auto">From aerospace-grade aluminum to industrial steel, we stock materials for every application.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {[
+                    { name: "Mild Steel", color: "bg-slate-400" },
+                    { name: "Stainless 304", color: "bg-slate-300" },
+                    { name: "Aluminum 6061", color: "bg-gray-200" },
+                    { name: "Brass", color: "bg-yellow-400" },
+                    { name: "Copper", color: "bg-orange-400" },
+                    { name: "Carbon Fiber", color: "bg-slate-800" },
+                    { name: "Acrylic", color: "bg-blue-200" },
+                    { name: "Polycarbonate", color: "bg-transparent border-2 border-slate-300" },
+                    { name: "G-10", color: "bg-green-300" },
+                    { name: "Titanium", color: "bg-slate-500" },
+                    { name: "Bronze", color: "bg-amber-600" },
+                    { name: "Delrin", color: "bg-white border-2 border-slate-200" },
+                ].map((mat, i) => (
+                    <div key={i} className="bg-white rounded-xl p-4 text-center hover:shadow-lg transition-shadow border border-slate-100">
+                        <div className={`w-12 h-12 ${mat.color} rounded-lg mx-auto mb-3`}></div>
+                        <span className="text-sm font-medium text-slate-700">{mat.name}</span>
+                    </div>
+                ))}
+            </div>
+            <div className="text-center mt-8">
+                <button className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2 mx-auto">
+                    View All Materials
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-slate-900">How It Works</h2>
+                <p className="text-slate-500 mt-4 max-w-2xl mx-auto">Get your custom parts in 4 simple steps</p>
+            </div>
+            <div className="grid md:grid-cols-4 gap-8">
+                {[
+                    { step: 1, title: "Design", desc: "Upload your CAD file or use our shape configurator", icon: "📐" },
+                    { step: 2, title: "Configure", desc: "Choose material, thickness, and finishing options", icon: "⚙️" },
+                    { step: 3, title: "Quote", desc: "Get instant pricing with bulk discounts", icon: "💰" },
+                    { step: 4, title: "Deliver", desc: "Receive precision parts at your door", icon: "📦" },
+                ].map((item, i) => (
+                    <div key={i} className="text-center relative">
+                        {i < 3 && (
+                            <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-slate-200"></div>
+                        )}
+                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 relative z-10">
+                            {item.icon}
+                        </div>
+                        <div className="text-sm font-bold text-blue-600 mb-2">Step {item.step}</div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
+                        <p className="text-slate-500">{item.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                {[
+                    { value: "50+", label: "Materials" },
+                    { value: "10K+", label: "Parts Manufactured" },
+                    { value: "500+", label: "Happy Customers" },
+                    { value: "99.5%", label: "On-Time Delivery" },
+                ].map((stat, i) => (
+                    <div key={i}>
+                        <div className="text-4xl md:text-5xl font-bold text-blue-400 mb-2">{stat.value}</div>
+                        <div className="text-slate-400">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-to-br from-blue-600 to-blue-700">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+            <h2 className="text-4xl font-bold text-white mb-6">Ready to Get Started?</h2>
+            <p className="text-xl text-blue-100 mb-8">
+                Join hundreds of businesses across Saudi Arabia who trust KSAPartCut for their manufacturing needs.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                    onClick={onStart}
+                    className="px-8 py-4 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                    Get Instant Quote
+                </button>
+                <button className="px-8 py-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-400 transition-colors border border-blue-400">
+                    Contact Sales
+                </button>
             </div>
         </div>
       </section>

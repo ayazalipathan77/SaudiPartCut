@@ -10,6 +10,8 @@ import AdminApp from './components/admin/AdminApp';
 import AuthModal from './components/AuthModal';
 import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
+import { Header, Footer } from './components/layout';
+import { MaterialsPage, ServicesPage, FAQPage, ContactPage } from './components/pages';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { PartDimensions, MaterialType, ServiceType, FinishingType, MaterialDef, ServiceDef, FinishingDef } from './types';
@@ -17,7 +19,7 @@ import { calculateQuote } from './utils/pricing';
 import { api } from './services/api';
 import { Shape } from './services/apiClient';
 
-type AppMode = 'landing' | 'wizard' | 'admin' | 'cart' | 'checkout';
+type AppMode = 'landing' | 'wizard' | 'admin' | 'cart' | 'checkout' | 'materials' | 'services' | 'guidelines' | 'faq' | 'contact';
 
 const AppContent: React.FC = () => {
   const { user, logout } = useAuth();
@@ -218,6 +220,36 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Navigation handler for content pages
+  const handleNavigate = (page: string) => {
+    switch (page) {
+      case 'home':
+      case 'landing':
+        setMode('landing');
+        break;
+      case 'materials':
+        setMode('materials');
+        break;
+      case 'services':
+        setMode('services');
+        break;
+      case 'guidelines':
+        setMode('guidelines');
+        break;
+      case 'faq':
+        setMode('faq');
+        break;
+      case 'contact':
+        setMode('contact');
+        break;
+      case 'quote':
+        handleStartQuote();
+        break;
+      default:
+        setMode('landing');
+    }
+  };
+
   const openLogin = () => {
     setAuthView('login');
     setAuthModalOpen(true);
@@ -280,23 +312,91 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Landing View
-  if (mode === 'landing') {
-      return (
-        <>
-          <LandingPage
-            onStart={handleStartQuote}
-            onLoginClick={openLogin}
-            onSignupClick={openSignup}
-            onAdminClick={() => setMode('admin')}
-          />
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setAuthModalOpen(false)}
-            initialView={authView}
-          />
-        </>
-      );
+  // Content Pages (Landing, Materials, Services, Guidelines, FAQ, Contact)
+  if (['landing', 'materials', 'services', 'guidelines', 'faq', 'contact'].includes(mode)) {
+    // Determine current page for header highlighting
+    const currentPage = mode === 'landing' ? 'home' : mode;
+
+    return (
+      <div className="min-h-screen flex flex-col">
+        {/* Global Header */}
+        <Header
+          onNavigate={handleNavigate}
+          currentPage={currentPage}
+          onLoginClick={openLogin}
+          onCartClick={() => setMode('cart')}
+        />
+
+        {/* Page Content */}
+        <main className="flex-grow">
+          {mode === 'landing' && (
+            <LandingPage
+              onStart={handleStartQuote}
+              onLoginClick={openLogin}
+              onSignupClick={openSignup}
+              onAdminClick={() => setMode('admin')}
+            />
+          )}
+          {mode === 'materials' && (
+            <MaterialsPage onStartQuote={handleStartQuote} />
+          )}
+          {mode === 'services' && (
+            <ServicesPage onStartQuote={handleStartQuote} />
+          )}
+          {mode === 'guidelines' && (
+            <div className="min-h-screen bg-slate-50">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white py-16">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                  <h1 className="text-4xl font-bold mb-4">Design Guidelines</h1>
+                  <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+                    Learn how to prepare your files for laser cutting and fabrication.
+                  </p>
+                </div>
+              </div>
+              <div className="max-w-4xl mx-auto px-4 py-12">
+                <div className="bg-white rounded-xl border border-slate-200 p-8">
+                  <h2 className="text-2xl font-bold text-slate-900 mb-6">File Preparation Guidelines</h2>
+                  <div className="space-y-6 text-slate-600">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Accepted File Formats</h3>
+                      <p>We accept DXF, DWG, AI (Adobe Illustrator), EPS, and STEP/STP files. Vector-based formats are required.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Design Requirements</h3>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>All paths must be closed and non-overlapping</li>
+                        <li>Use millimeters for all dimensions</li>
+                        <li>Minimum hole diameter: 1x material thickness</li>
+                        <li>Minimum slot width: 1.5x material thickness</li>
+                        <li>Minimum feature spacing: 2x material thickness</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Bend Lines</h3>
+                      <p>Place bend lines on a separate layer labeled "BEND" using a different color (red recommended).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {mode === 'faq' && (
+            <FAQPage onContactClick={() => setMode('contact')} />
+          )}
+          {mode === 'contact' && <ContactPage />}
+        </main>
+
+        {/* Global Footer */}
+        <Footer onNavigate={handleNavigate} />
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialView={authView}
+        />
+      </div>
+    );
   }
 
   // Wizard Mode
